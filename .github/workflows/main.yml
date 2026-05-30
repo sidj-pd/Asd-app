@@ -1,8 +1,0 @@
-            - name: Build and Release Debug APK
-  # You may pin to the exact commit or the version.
-  # uses: glenfordham/action-release-debugapk@37b414425bf40655d62b54314101edf8944420a5
-  uses: glenfordham/action-release-debugapk@0.1
-  with:
-    # GitHub secret token to allow automated publishing of APK to release.
-    GITHUB_TOKEN: 
-          
