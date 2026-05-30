@@ -8,6 +8,8 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.media.MediaPlayer;
@@ -17,6 +19,7 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.InputType;
 import android.view.Gravity;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -107,7 +110,7 @@ public class MainActivity extends Activity {
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(dp(18), dp(12), dp(18), dp(18));
+        main.setPadding(dp(12), dp(8), dp(12), dp(12));
         root.addView(main, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 83));
 
         LinearLayout header = new LinearLayout(this);
@@ -116,7 +119,7 @@ public class MainActivity extends Activity {
         main.addView(header, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         titleText = new TextView(this);
-        titleText.setTextSize(26);
+        titleText.setTextSize(24);
         titleText.setTypeface(Typeface.DEFAULT_BOLD);
         titleText.setTextColor(Color.rgb(24, 36, 52));
         header.addView(titleText, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
@@ -142,7 +145,7 @@ public class MainActivity extends Activity {
         }
         selectedPanelIndex = Math.max(0, Math.min(selectedPanelIndex, panels.size() - 1));
         Panel selectedPanel = panels.get(selectedPanelIndex);
-        titleText.setText(selectedPanel.icon + " " + selectedPanel.name);
+        titleText.setText("Asd app  •  " + selectedPanel.icon + " " + selectedPanel.name);
         editButton.setText(editMode ? "Done" : "Edit");
         addPanelButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
         renderPanelList();
@@ -184,7 +187,7 @@ public class MainActivity extends Activity {
             GridLayout.LayoutParams params = new GridLayout.LayoutParams(GridLayout.spec(i / 2, 1f), GridLayout.spec(i % 2, 1f));
             params.width = 0;
             params.height = 0;
-            params.setMargins(dp(10), dp(10), dp(10), dp(10));
+            params.setMargins(dp(6), dp(6), dp(6), dp(6));
             cardGrid.addView(cardView, params);
         }
     }
@@ -193,8 +196,8 @@ public class MainActivity extends Activity {
         LinearLayout cardLayout = new LinearLayout(this);
         cardLayout.setOrientation(LinearLayout.VERTICAL);
         cardLayout.setGravity(Gravity.CENTER);
-        cardLayout.setPadding(dp(14), dp(14), dp(14), dp(14));
-        cardLayout.setBackground(makeRoundedBackground(Color.WHITE, Color.rgb(120, 135, 150), 3));
+        cardLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
+        cardLayout.setBackground(makeRoundedBackground(Color.WHITE, Color.rgb(145, 155, 165), 1));
         cardLayout.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
@@ -204,41 +207,57 @@ public class MainActivity extends Activity {
         });
 
         FrameLayout imageFrame = new FrameLayout(this);
-        imageFrame.setBackground(makeRoundedBackground(Color.rgb(249, 250, 252), Color.rgb(95, 111, 128), 3));
+        imageFrame.setBackground(makeRoundedBackground(Color.rgb(249, 250, 252), Color.rgb(135, 145, 155), 1));
         cardLayout.addView(imageFrame, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
         if (card.hasImage()) {
-            ImageView image = new ImageView(this);
-            image.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            AdjustableImageView image = new AdjustableImageView(this, card);
             image.setImageURI(Uri.parse(card.imageUri));
+            image.setOnClickListener(v -> {
+                if (!editMode && card.hasAudio()) {
+                    playAudio(card.audioPath);
+                }
+            });
             imageFrame.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            if (editMode) {
+                TextView hint = new TextView(this);
+                hint.setText("Drag / pinch");
+                hint.setTextSize(12);
+                hint.setTextColor(Color.WHITE);
+                hint.setGravity(Gravity.CENTER);
+                hint.setPadding(dp(6), dp(3), dp(6), dp(3));
+                hint.setBackground(makeRoundedBackground(Color.argb(160, 0, 0, 0), Color.TRANSPARENT, 0));
+                FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
+                hintParams.setMargins(0, dp(4), dp(4), 0);
+                imageFrame.addView(hint, hintParams);
+            }
         } else {
             TextView placeholder = new TextView(this);
             placeholder.setGravity(Gravity.CENTER);
             placeholder.setText(editMode ? "+\nAdd picture" : "Empty");
-            placeholder.setTextSize(24);
+            placeholder.setTextSize(20);
             placeholder.setTextColor(Color.rgb(115, 130, 145));
             imageFrame.addView(placeholder, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
 
         TextView label = new TextView(this);
         label.setText(card.label.isEmpty() ? (editMode ? "Tap to edit" : "") : card.label);
-        label.setTextSize(26);
+        label.setTextSize(18);
         label.setTypeface(Typeface.DEFAULT_BOLD);
         label.setTextColor(Color.rgb(20, 30, 40));
         label.setGravity(Gravity.CENTER);
         label.setSingleLine(false);
         LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        labelParams.setMargins(0, dp(10), 0, dp(8));
+        labelParams.setMargins(0, dp(4), 0, dp(3));
         cardLayout.addView(label, labelParams);
 
         Button playButton = new Button(this);
-        playButton.setText(editMode ? (card.hasAudio() ? "Play / Record" : "Record") : "Play");
+        playButton.setText(editMode ? (card.hasAudio() ? "Play / Rec" : "Record") : "Play");
         playButton.setAllCaps(false);
         playButton.setTextColor(Color.WHITE);
-        playButton.setTextSize(18);
+        playButton.setTextSize(14);
         playButton.setTypeface(Typeface.DEFAULT_BOLD);
-        playButton.setBackground(makeRoundedBackground(Color.rgb(198, 40, 40), Color.rgb(130, 20, 20), 2));
+        playButton.setBackground(makeRoundedBackground(Color.rgb(198, 40, 40), Color.rgb(130, 20, 20), 1));
         playButton.setEnabled(editMode || card.hasAudio());
         playButton.setOnClickListener(v -> {
             if (editMode) {
@@ -247,7 +266,7 @@ public class MainActivity extends Activity {
                 playAudio(card.audioPath);
             }
         });
-        cardLayout.addView(playButton, new LinearLayout.LayoutParams(dp(150), dp(56)));
+        cardLayout.addView(playButton, new LinearLayout.LayoutParams(dp(92), dp(40)));
 
         return cardLayout;
     }
@@ -334,6 +353,32 @@ public class MainActivity extends Activity {
         });
         form.addView(imageButton);
 
+        if (card.hasImage()) {
+            TextView adjustHint = new TextView(this);
+            adjustHint.setText("In Edit mode, drag the picture with one finger or pinch with two fingers. These buttons also fine-tune the picture.");
+            adjustHint.setTextSize(13);
+            adjustHint.setTextColor(Color.rgb(70, 80, 90));
+            form.addView(adjustHint);
+
+            LinearLayout zoomRow = new LinearLayout(this);
+            zoomRow.setOrientation(LinearLayout.HORIZONTAL);
+            zoomRow.addView(makeAdjustButton("Zoom +", () -> adjustImage(card, 1.12f, 0, 0)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            zoomRow.addView(makeAdjustButton("Zoom -", () -> adjustImage(card, 0.88f, 0, 0)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            zoomRow.addView(makeAdjustButton("Reset", () -> {
+                card.resetImagePosition();
+                renderAll();
+            }), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            form.addView(zoomRow);
+
+            LinearLayout panRow = new LinearLayout(this);
+            panRow.setOrientation(LinearLayout.HORIZONTAL);
+            panRow.addView(makeAdjustButton("←", () -> adjustImage(card, 1f, -24, 0)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            panRow.addView(makeAdjustButton("↑", () -> adjustImage(card, 1f, 0, -24)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            panRow.addView(makeAdjustButton("↓", () -> adjustImage(card, 1f, 0, 24)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            panRow.addView(makeAdjustButton("→", () -> adjustImage(card, 1f, 24, 0)), new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
+            form.addView(panRow);
+        }
+
         Button audioButton = new Button(this);
         audioButton.setText(card.hasAudio() ? "Play audio" : "No audio yet");
         audioButton.setAllCaps(false);
@@ -364,6 +409,21 @@ public class MainActivity extends Activity {
                     renderAll();
                 });
         builder.show();
+    }
+
+    private Button makeAdjustButton(String text, Runnable action) {
+        Button button = new Button(this);
+        button.setText(text);
+        button.setAllCaps(false);
+        button.setOnClickListener(v -> action.run());
+        return button;
+    }
+
+    private void adjustImage(Card card, float scaleMultiplier, float offsetXDelta, float offsetYDelta) {
+        card.imageScale = Math.max(0.5f, Math.min(4.0f, card.imageScale * scaleMultiplier));
+        card.imageOffsetX += offsetXDelta;
+        card.imageOffsetY += offsetYDelta;
+        renderAll();
     }
 
     private void openImagePicker() {
@@ -462,7 +522,9 @@ public class MainActivity extends Activity {
                 getContentResolver().takePersistableUriPermission(uri, flags & Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } catch (SecurityException | IllegalArgumentException ignored) {
             }
-            panels.get(selectedPanelIndex).cards.get(pendingImageCardIndex).imageUri = uri.toString();
+            Card selectedCard = panels.get(selectedPanelIndex).cards.get(pendingImageCardIndex);
+            selectedCard.imageUri = uri.toString();
+            selectedCard.resetImagePosition();
             pendingImageCardIndex = -1;
             renderAll();
         }
@@ -526,13 +588,107 @@ public class MainActivity extends Activity {
     private GradientDrawable makeRoundedBackground(int fillColor, int strokeColor, int strokeWidthDp) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(dp(14));
+        drawable.setCornerRadius(dp(8));
         drawable.setStroke(dp(strokeWidthDp), strokeColor);
         return drawable;
     }
 
     private int dp(int value) {
         return Math.round(value * getResources().getDisplayMetrics().density);
+    }
+
+    private class AdjustableImageView extends ImageView {
+        private final Card card;
+        private final Matrix imageMatrix = new Matrix();
+        private final PointF lastTouch = new PointF();
+        private float lastPinchDistance = 0f;
+
+        AdjustableImageView(Activity activity, Card card) {
+            super(activity);
+            this.card = card;
+            setScaleType(ImageView.ScaleType.MATRIX);
+            setOnTouchListener((view, event) -> handleImageTouch(event));
+        }
+
+        @Override
+        protected void onSizeChanged(int width, int height, int oldWidth, int oldHeight) {
+            super.onSizeChanged(width, height, oldWidth, oldHeight);
+            updateImageMatrix();
+        }
+
+        @Override
+        public void setImageURI(Uri uri) {
+            super.setImageURI(uri);
+            post(this::updateImageMatrix);
+        }
+
+        private boolean handleImageTouch(MotionEvent event) {
+            if (!editMode || !card.hasImage()) {
+                return false;
+            }
+            if (event.getPointerCount() >= 2) {
+                float distance = pinchDistance(event);
+                if (event.getActionMasked() == MotionEvent.ACTION_POINTER_DOWN) {
+                    lastPinchDistance = distance;
+                } else if (event.getActionMasked() == MotionEvent.ACTION_MOVE && lastPinchDistance > 0f) {
+                    float multiplier = distance / lastPinchDistance;
+                    card.imageScale = Math.max(0.5f, Math.min(4.0f, card.imageScale * multiplier));
+                    lastPinchDistance = distance;
+                    updateImageMatrix();
+                    savePanels();
+                }
+                return true;
+            }
+
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    lastTouch.set(event.getX(), event.getY());
+                    return true;
+                case MotionEvent.ACTION_MOVE:
+                    float dx = event.getX() - lastTouch.x;
+                    float dy = event.getY() - lastTouch.y;
+                    card.imageOffsetX += dx;
+                    card.imageOffsetY += dy;
+                    lastTouch.set(event.getX(), event.getY());
+                    updateImageMatrix();
+                    savePanels();
+                    return true;
+                case MotionEvent.ACTION_UP:
+                case MotionEvent.ACTION_CANCEL:
+                    lastPinchDistance = 0f;
+                    return true;
+                default:
+                    return true;
+            }
+        }
+
+        private float pinchDistance(MotionEvent event) {
+            float dx = event.getX(0) - event.getX(1);
+            float dy = event.getY(0) - event.getY(1);
+            return (float) Math.sqrt(dx * dx + dy * dy);
+        }
+
+        private void updateImageMatrix() {
+            if (getDrawable() == null || getWidth() == 0 || getHeight() == 0) {
+                return;
+            }
+            float drawableWidth = getDrawable().getIntrinsicWidth();
+            float drawableHeight = getDrawable().getIntrinsicHeight();
+            if (drawableWidth <= 0 || drawableHeight <= 0) {
+                return;
+            }
+            float baseScale = Math.max(getWidth() / drawableWidth, getHeight() / drawableHeight);
+            float finalScale = baseScale * card.imageScale;
+            float scaledWidth = drawableWidth * finalScale;
+            float scaledHeight = drawableHeight * finalScale;
+            float translateX = (getWidth() - scaledWidth) / 2f + card.imageOffsetX;
+            float translateY = (getHeight() - scaledHeight) / 2f + card.imageOffsetY;
+
+            imageMatrix.reset();
+            imageMatrix.postScale(finalScale, finalScale);
+            imageMatrix.postTranslate(translateX, translateY);
+            setImageMatrix(imageMatrix);
+        }
     }
 
     private static class Panel {
@@ -583,6 +739,9 @@ public class MainActivity extends Activity {
         String imageUri = "";
         String label = "";
         String audioPath = "";
+        float imageScale = 1f;
+        float imageOffsetX = 0f;
+        float imageOffsetY = 0f;
 
         boolean hasImage() {
             return imageUri != null && !imageUri.isEmpty();
@@ -596,6 +755,13 @@ public class MainActivity extends Activity {
             imageUri = "";
             label = "";
             audioPath = "";
+            resetImagePosition();
+        }
+
+        void resetImagePosition() {
+            imageScale = 1f;
+            imageOffsetX = 0f;
+            imageOffsetY = 0f;
         }
 
         JSONObject toJson() {
@@ -604,6 +770,9 @@ public class MainActivity extends Activity {
                 object.put("imageUri", imageUri);
                 object.put("label", label);
                 object.put("audioPath", audioPath);
+                object.put("imageScale", imageScale);
+                object.put("imageOffsetX", imageOffsetX);
+                object.put("imageOffsetY", imageOffsetY);
             } catch (JSONException ignored) {
             }
             return object;
@@ -614,6 +783,9 @@ public class MainActivity extends Activity {
             card.imageUri = object.optString("imageUri", "");
             card.label = object.optString("label", "");
             card.audioPath = object.optString("audioPath", "");
+            card.imageScale = (float) object.optDouble("imageScale", 1.0);
+            card.imageOffsetX = (float) object.optDouble("imageOffsetX", 0.0);
+            card.imageOffsetY = (float) object.optDouble("imageOffsetY", 0.0);
             return card;
         }
     }

@@ -1,6 +1,6 @@
-# Picture Sound Panels
+# Asd app
 
-Picture Sound Panels is a tablet-first Android app for picture, word, and sound association. It is designed around a calm landscape layout for neurodivergent children: a compact panel list on the left and a large 2x2 picture grid on the right.
+Asd app is a tablet-first Android app for picture, word, and sound association. It is designed around a calm landscape layout for neurodivergent children: a compact panel list on the left and a large 2x2 picture grid on the right.
 
 ## MVP features
 
@@ -10,6 +10,7 @@ Picture Sound Panels is a tablet-first Android app for picture, word, and sound 
 - Bordered photo area so each picture panel is visually distinct.
 - Text label below each photo.
 - Red `Play` audio button visible in child mode.
+- Edit-mode image positioning: drag to pan, pinch to zoom, or use fine-tune buttons.
 - Edit mode for caregivers to add/change pictures, labels, and recorded audio.
 - Local-only storage using on-device preferences and files.
 
@@ -228,7 +229,7 @@ Use these steps after you have downloaded or received `app-debug.apk`:
 6. Go back to `app-debug.apk` and tap it again.
 7. Tap **Install**.
 8. When installation finishes, tap **Open**.
-9. Later, you can open it from the tablet's app drawer as **Picture Sound Panels**.
+9. Later, you can open it from the tablet's app drawer as **Asd app**.
 
 If Android says the app is unsafe because it is from outside the Play Store, that is expected for a debug APK. Only install APKs you built yourself or received from someone you trust.
 
@@ -244,7 +245,7 @@ If you have a computer with Android platform tools, install the debug APK with:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Then open **Picture Sound Panels** on the tablet, or launch it from ADB with:
+Then open **Asd app** on the tablet, or launch it from ADB with:
 
 ```bash
 adb shell monkey -p com.example.picturesoundpanels 1
@@ -252,7 +253,7 @@ adb shell monkey -p com.example.picturesoundpanels 1
 
 ## First-time app setup on the tablet
 
-1. Open **Picture Sound Panels**.
+1. Open **Asd app**.
 2. Rotate the tablet to landscape. The app is designed for landscape use.
 3. Tap **Edit** in the top-right area.
 4. Tap a card placeholder.
@@ -262,7 +263,8 @@ adb shell monkey -p com.example.picturesoundpanels 1
 8. Speak the word or phrase, then tap **Stop**.
 9. Tap **Save**.
 10. Tap **Done** to return to child mode.
-11. Tap the card or the red **Play** button to hear the recording.
+11. If the picture needs adjustment, stay in **Edit** mode and drag the picture to move it, pinch to zoom, or use the card editor buttons.
+12. Tap the card or the red **Play** button to hear the recording.
 
 ## Troubleshooting
 
@@ -283,7 +285,7 @@ adb shell monkey -p com.example.picturesoundpanels 1
 ### Audio recording does not work
 
 - When Android asks for microphone permission, choose **Allow**.
-- If permission was denied, open **Settings > Apps > Picture Sound Panels > Permissions** and allow **Microphone**.
+- If permission was denied, open **Settings > Apps > Asd app > Permissions** and allow **Microphone**.
 
 ### Photos do not appear later
 
