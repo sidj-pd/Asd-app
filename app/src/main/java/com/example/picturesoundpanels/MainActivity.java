@@ -280,30 +280,33 @@ public class MainActivity extends Activity {
     }
 
     private void playCardAudioWithAnimation(View cardView, Card card) {
-        popView(cardView, 1.08f, 110, 240);
+        popView(cardView, 1.12f, 130, 280);
         playAudio(card.audioPath);
     }
 
     private void popView(View view, float peakScale, long growDuration, long settleDuration) {
         view.animate().cancel();
-
+        view.bringToFront();
+        view.setScaleX(1.0f);
+        view.setScaleY(1.0f);
+        view.setAlpha(1.0f);
         AnimatorSet pop = new AnimatorSet();
-
-        ObjectAnimator growX = ObjectAnimator.ofFloat(view, View.SCALE_X, view.getScaleX(), peakScale);
-        ObjectAnimator growY = ObjectAnimator.ofFloat(view, View.SCALE_Y, view.getScaleY(), peakScale);
+        ObjectAnimator growX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, peakScale);
+        ObjectAnimator growY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, peakScale);
+        ObjectAnimator fadeDown = ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.86f);
         ObjectAnimator settleX = ObjectAnimator.ofFloat(view, View.SCALE_X, peakScale, 1.0f);
         ObjectAnimator settleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, peakScale, 1.0f);
-
+        ObjectAnimator fadeUp = ObjectAnimator.ofFloat(view, View.ALPHA, 0.86f, 1.0f);
         growX.setDuration(growDuration);
         growY.setDuration(growDuration);
+        fadeDown.setDuration(growDuration);
         settleX.setDuration(settleDuration);
         settleY.setDuration(settleDuration);
-
+        fadeUp.setDuration(settleDuration);
         settleX.setInterpolator(new OvershootInterpolator());
         settleY.setInterpolator(new OvershootInterpolator());
-
-        pop.play(growX).with(growY);
-        pop.play(settleX).with(settleY).after(growX);
+        pop.play(growX).with(growY).with(fadeDown);
+        pop.play(settleX).with(settleY).with(fadeUp).after(growX);
         pop.start();
     }
 
