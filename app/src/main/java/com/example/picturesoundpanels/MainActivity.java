@@ -276,6 +276,34 @@ public class MainActivity extends Activity {
         return cardLayout;
     }
 
+    private void playCardAudioWithAnimation(View cardView, Card card) {
+        popView(cardView, 1.04f, 90, 170);
+        playAudio(card.audioPath);
+    }
+
+    private void popView(View view, float peakScale, long growDuration, long settleDuration) {
+        view.animate().cancel();
+
+        AnimatorSet pop = new AnimatorSet();
+
+        ObjectAnimator growX = ObjectAnimator.ofFloat(view, View.SCALE_X, view.getScaleX(), peakScale);
+        ObjectAnimator growY = ObjectAnimator.ofFloat(view, View.SCALE_Y, view.getScaleY(), peakScale);
+        ObjectAnimator settleX = ObjectAnimator.ofFloat(view, View.SCALE_X, peakScale, 1.0f);
+        ObjectAnimator settleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, peakScale, 1.0f);
+
+        growX.setDuration(growDuration);
+        growY.setDuration(growDuration);
+        settleX.setDuration(settleDuration);
+        settleY.setDuration(settleDuration);
+
+        settleX.setInterpolator(new OvershootInterpolator());
+        settleY.setInterpolator(new OvershootInterpolator());
+
+        pop.play(growX).with(growY);
+        pop.play(settleX).with(settleY).after(growX);
+        pop.start();
+    }
+
     private void showPanelEditor(int index) {
         if (!editMode && index >= 0) {
             return;
