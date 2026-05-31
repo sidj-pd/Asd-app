@@ -18,6 +18,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.text.InputType;
+import android.text.TextUtils;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -203,7 +204,7 @@ public class MainActivity extends Activity {
             if (editMode) {
                 showCardEditor(cardIndex);
             } else if (card.hasAudio()) {
-                playAudio(card.audioPath);
+                playCardAudioWithAnimation(cardLayout, card);
             }
         });
 

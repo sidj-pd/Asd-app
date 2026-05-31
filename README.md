@@ -4,11 +4,12 @@ Asd app is a tablet-first Android app for picture, word, and sound association. 
 
 ## MVP features
 
-- Tablet landscape layout with a compact left panel and large main picture area.
+- Tablet landscape layout with a compact left panel, a soft outer app frame, and a large main picture area.
 - Editable panels with emoji icons and names.
 - Four large card slots per panel, with empty placeholders allowed.
 - Bordered photo area so each picture panel is visually distinct.
 - Text label below each photo.
+- Compact label and red `Play` button share one row so photos get more space.
 - Red `Play` audio button visible in child mode.
 - Edit-mode image positioning: drag to pan, pinch to zoom, or use fine-tune buttons.
 - Edit mode for caregivers to add/change pictures, labels, and recorded audio.
