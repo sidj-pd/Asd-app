@@ -13,6 +13,7 @@ Asd app is a tablet-first Android app for picture, word, and sound association. 
 - Edit-mode image positioning: drag to pan, pinch to zoom, or use fine-tune buttons.
 - Edit mode for caregivers to add/change pictures, labels, and recorded audio.
 - Local-only storage using on-device preferences and files.
+- Content is padded below the Android status bar so the app title and edit controls do not overlap system icons.
 
 ## Beginner installation guide
 

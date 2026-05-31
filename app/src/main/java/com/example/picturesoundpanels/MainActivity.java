@@ -81,6 +81,7 @@ public class MainActivity extends Activity {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.HORIZONTAL);
         root.setBackgroundColor(Color.rgb(246, 248, 250));
+        root.setPadding(0, getStatusBarTopPadding(), 0, 0);
         setContentView(root);
 
         LinearLayout side = new LinearLayout(this);
@@ -591,6 +592,14 @@ public class MainActivity extends Activity {
         drawable.setCornerRadius(dp(8));
         drawable.setStroke(dp(strokeWidthDp), strokeColor);
         return drawable;
+    }
+
+    private int getStatusBarTopPadding() {
+        int resourceId = getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            return getResources().getDimensionPixelSize(resourceId);
+        }
+        return dp(24);
     }
 
     private int dp(int value) {
