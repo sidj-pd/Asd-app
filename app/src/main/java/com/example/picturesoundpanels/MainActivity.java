@@ -209,7 +209,7 @@ public class MainActivity extends Activity {
         cardLayout.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
-            } else if (card.hasAudio()) {
+            } else {
                 playCardAudioWithAnimation(cardLayout, card);
             }
         });
@@ -280,8 +280,10 @@ public class MainActivity extends Activity {
     }
 
     private void playCardAudioWithAnimation(View cardView, Card card) {
-        popView(cardView, 1.12f, 130, 280);
-        playAudio(card.audioPath);
+        popView(cardView, 1.16f, 150, 320);
+        if (card.hasAudio()) {
+            playAudio(card.audioPath);
+        }
     }
 
     private void popView(View view, float peakScale, long growDuration, long settleDuration) {
