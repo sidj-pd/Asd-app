@@ -116,6 +116,7 @@ public class MainActivity extends Activity {
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
         main.setPadding(dp(12), dp(8), dp(12), dp(12));
+        main.setBackground(makeRoundedBackground(Color.rgb(252, 253, 255), Color.rgb(172, 196, 224), 1));
         root.addView(main, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 83));
 
         LinearLayout header = new LinearLayout(this);
@@ -141,6 +142,8 @@ public class MainActivity extends Activity {
         cardGrid.setColumnCount(2);
         cardGrid.setRowCount(2);
         cardGrid.setUseDefaultMargins(true);
+        cardGrid.setPadding(dp(3), dp(3), dp(3), dp(3));
+        cardGrid.setBackground(makeRoundedBackground(Color.rgb(213, 226, 240), Color.rgb(74, 118, 168), 2));
         main.addView(cardGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
     }
 
@@ -277,7 +280,7 @@ public class MainActivity extends Activity {
     }
 
     private void playCardAudioWithAnimation(View cardView, Card card) {
-        popView(cardView, 1.04f, 90, 170);
+        popView(cardView, 1.08f, 110, 240);
         playAudio(card.audioPath);
     }
 
