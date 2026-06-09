@@ -344,6 +344,8 @@ fun CardItem(
     onImageUpdate: (Float, Float, Float) -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "playback")
+    val currentCard by rememberUpdatedState(card)
+    val currentOnImageUpdate by rememberUpdatedState(onImageUpdate)
     
     // Smooth scaling pulsing
     val scaleAnim by infiniteTransition.animateFloat(
@@ -447,10 +449,10 @@ fun CardItem(
                             .then(if (editMode) {
                                 Modifier.pointerInput(Unit) {
                                     detectTransformGestures { _, pan, zoom, _ ->
-                                        val newScale = (card.imageScale * zoom).coerceIn(0.5f, 5.0f)
-                                        val newX = card.imageOffsetX + pan.x
-                                        val newY = card.imageOffsetY + pan.y
-                                        onImageUpdate(newScale, newX, newY)
+                                        val newScale = (currentCard.imageScale * zoom).coerceIn(0.5f, 5.0f)
+                                        val newX = currentCard.imageOffsetX + pan.x
+                                        val newY = currentCard.imageOffsetY + pan.y
+                                        currentOnImageUpdate(newScale, newX, newY)
                                     }
                                 }
                             } else Modifier)
@@ -599,15 +601,6 @@ fun CardEditorDialog(
                 }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (card.hasImage()) "Change Picture" else "Add Picture")
                 }
-
-                if (card.hasImage()) {
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = { viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.imageScale *= 1.1f } }, modifier = Modifier.weight(1f)) { Text("Zoom +") }
-                        Button(onClick = { viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.imageScale *= 0.9f } }, modifier = Modifier.weight(1f)) { Text("Zoom -") }
-                        Button(onClick = { viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.resetImagePosition() } }, modifier = Modifier.weight(1f)) { Text("Reset") }
-                    }
-                }
-
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { viewModel.playCardAudio(cardIndex) }, 
