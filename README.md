@@ -1,16 +1,18 @@
-# Asd app
+# Speak Help
 
-Asd app is a tablet-first Android app for picture, word, and sound association. It is designed around a calm landscape layout for neurodivergent children: a compact panel list on the left and a large 2x2 picture grid on the right.
+Speak Help is a tablet-first Android app for picture, word, and sound association. It is designed around a calm landscape layout for neurodivergent children: a compact panel list on the left and a large 2x2 picture grid on the right.
 
 ## MVP features
 
-- Tablet landscape layout with a compact left panel, a soft outer app frame, and a large main picture area.
+- Tablet landscape layout with a compact left panel, a warm soft outer app frame, and a large main picture area.
 - Editable panels with emoji icons and names.
 - Four large card slots per panel, with empty placeholders allowed.
 - Bordered photo area so each picture panel is visually distinct.
 - Text label below each photo.
-- Compact label and red `Play` button share one row so photos get more space.
-- Red `Play` audio button visible in child mode.
+- Compact word label and softer `Play` button share one row so photos get more space.
+- Child mode locks other taps while a selected card's audio plays, with a gentle running animation on the active card.
+- Softer warm-neutral theme with green/blue accents and larger touch targets.
+- Caregiver edit mode includes add and remove panel controls in the side panel.
 - Edit-mode image positioning: drag to pan, pinch to zoom, or use fine-tune buttons.
 - Edit mode for caregivers to add/change pictures, labels, and recorded audio.
 - Local-only storage using on-device preferences and files.
@@ -217,7 +219,7 @@ The `-r` means reinstall/update the app if it is already installed.
 
 ## How to run the debug APK
 
-A debug APK is a test build of the app. To run it on your tablet, you first install it, then open it like any other Android app.
+A debug APK is a test build of the app. To run it on your tablet, you first install it, then open it like any other app.
 
 ### Run it directly on the tablet
 
@@ -231,7 +233,7 @@ Use these steps after you have downloaded or received `app-debug.apk`:
 6. Go back to `app-debug.apk` and tap it again.
 7. Tap **Install**.
 8. When installation finishes, tap **Open**.
-9. Later, you can open it from the tablet's app drawer as **Asd app**.
+9. Later, you can open it from the tablet's app drawer as **Speak Help**.
 
 If Android says the app is unsafe because it is from outside the Play Store, that is expected for a debug APK. Only install APKs you built yourself or received from someone you trust.
 
@@ -247,7 +249,7 @@ If you have a computer with Android platform tools, install the debug APK with:
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Then open **Asd app** on the tablet, or launch it from ADB with:
+Then open **Speak Help** on the tablet, or launch it from ADB with:
 
 ```bash
 adb shell monkey -p com.example.picturesoundpanels 1
@@ -255,7 +257,7 @@ adb shell monkey -p com.example.picturesoundpanels 1
 
 ## First-time app setup on the tablet
 
-1. Open **Asd app**.
+1. Open **Speak Help**.
 2. Rotate the tablet to landscape. The app is designed for landscape use.
 3. Tap **Edit** in the top-right area.
 4. Tap a card placeholder.
@@ -266,7 +268,7 @@ adb shell monkey -p com.example.picturesoundpanels 1
 9. Tap **Save**.
 10. Tap **Done** to return to child mode.
 11. If the picture needs adjustment, stay in **Edit** mode and drag the picture to move it, pinch to zoom, or use the card editor buttons.
-12. Tap the card or the red **Play** button to hear the recording.
+12. Tap the card or the **Play** button to hear the recording.
 
 ## Troubleshooting
 
@@ -287,7 +289,7 @@ adb shell monkey -p com.example.picturesoundpanels 1
 ### Audio recording does not work
 
 - When Android asks for microphone permission, choose **Allow**.
-- If permission was denied, open **Settings > Apps > Asd app > Permissions** and allow **Microphone**.
+- If permission was denied, open **Settings > Apps > Speak Help > Permissions** and allow **Microphone**.
 
 ### Photos do not appear later
 
