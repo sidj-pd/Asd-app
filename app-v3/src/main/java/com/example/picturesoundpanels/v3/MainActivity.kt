@@ -405,7 +405,15 @@ fun CardEditorDialog(
     val context = LocalContext.current
     
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let { onImagePick(it) }
+        uri?.let {
+            try {
+                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+                context.contentResolver.takePersistableUriPermission(it, flags)
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            onImagePick(it)
+        }
     }
 
     var isRecording by remember { mutableStateOf(false) }
