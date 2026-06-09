@@ -191,10 +191,10 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
             modifier = Modifier
                 .fillMaxHeight()
                 .weight(0.75f)
-                .padding(24.dp)
-                .clip(RoundedCornerShape(32.dp))
+                .padding(12.dp) // Reduced outer padding from 24.dp to 12.dp
+                .clip(RoundedCornerShape(24.dp)) // Adjusted corner radius to match
                 .background(Color(0xFFE5DFD5)) // Premium warm-sand background for card contrast
-                .padding(24.dp)
+                .padding(12.dp) // Reduced inner padding from 24.dp to 12.dp
         ) {
             val currentPanel = panels.getOrNull(selectedIndex)
             
@@ -216,17 +216,17 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
             // Card Grid (Fixed 2x2 Layout to prevent height collapse)
             currentPanel?.let { panel ->
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp) // Reduced grid gap to 12.dp
                 ) {
                     Row(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp) // Reduced grid gap to 12.dp
                     ) {
                         Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             CardItem(
@@ -267,7 +267,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                     }
                     Row(
                         modifier = Modifier.weight(1f).fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                        horizontalArrangement = Arrangement.spacedBy(12.dp) // Reduced grid gap to 12.dp
                     ) {
                         Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
                             CardItem(
@@ -412,9 +412,42 @@ fun CardItem(
         label = "borderWidth"
     )
 
+    // Calm text scale pulsing when active (1.0x to 1.12x)
+    val textScaleAnim by infiniteTransition.animateFloat(
+        initialValue = 1.0f,
+        targetValue = 1.12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "textScale"
+    )
+
+    // Calm text color transition progress (from dark gray to vibrant red)
+    val textColorProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "textColorProgress"
+    )
+
     val activeScale = if (isActive) scaleAnim else 1f
     val borderWidth = (if (isActive) borderWidthAnim else 1f).dp
     val borderColor = if (isActive) Color(0xFFD32F2F) else Color(0xFFDCD6CD) // Red active border vs soft sand-grey
+    
+    val textScale = if (isActive) textScaleAnim else 1f
+    val textColor = if (isActive) {
+        androidx.compose.ui.graphics.lerp(
+            start = MaterialTheme.colorScheme.onSurface,
+            stop = Color(0xFFD32F2F),
+            fraction = textColorProgress
+        )
+    } else {
+        MaterialTheme.colorScheme.onSurface
+    }
 
     ElevatedCard(
         modifier = Modifier
@@ -493,12 +526,22 @@ fun CardItem(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // Symmetrical placeholder on the left to perfectly center the text
+                Spacer(modifier = Modifier.size(32.dp))
+
                 Text(
                     text = if (card.label.isEmpty() && editMode) "Tap to edit" else card.label,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
-                    modifier = Modifier.weight(1f)
+                    textAlign = TextAlign.Center,
+                    color = textColor,
+                    modifier = Modifier
+                        .weight(1f)
+                        .graphicsLayer {
+                            scaleX = textScale
+                            scaleY = textScale
+                        }
                 )
                 
                 Spacer(modifier = Modifier.width(8.dp))
@@ -508,7 +551,7 @@ fun CardItem(
                         .size(32.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(
-                            if (isActive) Color(0xFFEE6C4D)
+                            if (isActive) Color(0xFFD32F2F) // Match active red theme
                             else if (editMode) MaterialTheme.colorScheme.secondary
                             else MaterialTheme.colorScheme.primary
                         )
