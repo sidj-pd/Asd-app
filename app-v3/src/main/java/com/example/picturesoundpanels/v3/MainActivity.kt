@@ -17,6 +17,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -237,6 +238,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 card = panel.cards[0],
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 0,
+                                isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 0,
                                 onClick = {
                                     if (editMode) showCardDialog = 0
                                     else viewModel.playCardAudio(0)
@@ -255,6 +257,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 card = panel.cards[1],
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 1,
+                                isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 1,
                                 onClick = {
                                     if (editMode) showCardDialog = 1
                                     else viewModel.playCardAudio(1)
@@ -278,6 +281,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 card = panel.cards[2],
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 2,
+                                isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 2,
                                 onClick = {
                                     if (editMode) showCardDialog = 2
                                     else viewModel.playCardAudio(2)
@@ -296,6 +300,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 card = panel.cards[3],
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 3,
+                                isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 3,
                                 onClick = {
                                     if (editMode) showCardDialog = 3
                                     else viewModel.playCardAudio(3)
@@ -383,10 +388,10 @@ fun CardItem(
     card: CardModel, 
     editMode: Boolean, 
     isActive: Boolean, 
+    isDimmed: Boolean,
     onClick: () -> Unit,
     onImageUpdate: (Float, Float, Float) -> Unit
 ) {
-    val infiniteTransition = rememberInfiniteTransition(label = "playback")
     val currentCard by rememberUpdatedState(card)
     val currentOnImageUpdate by rememberUpdatedState(onImageUpdate)
 
@@ -394,122 +399,68 @@ fun CardItem(
     var offsetXState by remember(card) { mutableStateOf(card.imageOffsetX) }
     var offsetYState by remember(card) { mutableStateOf(card.imageOffsetY) }
     
-    // Smooth scaling pulsing (Calm, 1.0x to 1.03x over 1500ms)
-    val scaleAnim by infiniteTransition.animateFloat(
-        initialValue = 1.00f,
-        targetValue = 1.03f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
+    // Smooth spotlight transitions
+    val cardAlpha by animateFloatAsState(
+        targetValue = if (isDimmed) 0.7f else 1.0f,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "cardAlpha"
     )
 
-    // Red border width pulsing in opposite phase (6dp down to 2dp)
-    val borderWidthAnim by infiniteTransition.animateFloat(
-        initialValue = 6f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+    val containerColor by animateColorAsState(
+        targetValue = if (isActive) Color(0xFFFFF9E6) else Color.White, // Warm pastel cream/yellow when active
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "containerColor"
+    )
+
+    val cardScale by animateFloatAsState(
+        targetValue = if (isActive) 1.03f else 1.00f,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "cardScale"
+    )
+
+    val imageScaleAnim by animateFloatAsState(
+        targetValue = if (isActive) 1.05f else 1.00f,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "imageScale"
+    )
+
+    val borderStrokeColor by animateColorAsState(
+        targetValue = if (isActive) Color(0xFFFBC02D) else Color(0xFFDCD6CD), // Warm amber/yellow outline when active
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "borderColor"
+    )
+
+    val borderStrokeWidth by animateDpAsState(
+        targetValue = if (isActive) 3.dp else 1.dp,
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "borderWidth"
     )
 
-    // Calm text scale pulsing when active (1.0x to 1.12x)
-    val textScaleAnim by infiniteTransition.animateFloat(
-        initialValue = 1.0f,
-        targetValue = 1.12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
+    val textScale by animateFloatAsState(
+        targetValue = if (isActive) 1.15f else 1.0f, // Smooth text expansion
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "textScale"
     )
 
-    // Calm text color transition progress (from dark gray to vibrant red)
-    val textColorProgress by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "textColorProgress"
+    val textColor by animateColorAsState(
+        targetValue = if (isActive) Color(0xFFE65100) else MaterialTheme.colorScheme.onSurface, // Warm amber/orange vs onSurface
+        animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
+        label = "textColor"
     )
-
-    // Pulse animation for the glowing shadow opacity (0.3f to 0.7f over 1500ms)
-    val glowAlphaAnim by infiniteTransition.animateFloat(
-        initialValue = 0.3f,
-        targetValue = 0.7f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
-    )
-
-    // Pulse animation for the image inside the card (1.00f to 1.06f over 1500ms)
-    val imagePulseScaleAnim by infiniteTransition.animateFloat(
-        initialValue = 1.00f,
-        targetValue = 1.06f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1500, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "imagePulseScale"
-    )
-
-    val activeScale = if (isActive) scaleAnim else 1f
-    val borderWidth = (if (isActive) borderWidthAnim else 1f).dp
-    val borderColor = if (isActive) Color(0xFFD32F2F) else Color(0xFFDCD6CD) // Red active border vs soft sand-grey
-    
-    val textScale = if (isActive) textScaleAnim else 1f
-    val textColor = if (isActive) {
-        androidx.compose.ui.graphics.lerp(
-            start = MaterialTheme.colorScheme.onSurface,
-            stop = Color(0xFFD32F2F),
-            fraction = textColorProgress
-        )
-    } else {
-        MaterialTheme.colorScheme.onSurface
-    }
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                scaleX = activeScale
-                scaleY = activeScale
+                scaleX = cardScale
+                scaleY = cardScale
+                alpha = cardAlpha
             }
-            .drawBehind {
-                if (isActive) {
-                    val glowColor = Color(0xFFD32F2F) // Vibrant Red glow for the active panel
-                    val glowAlpha = glowAlphaAnim
-                    // Draw 6 concentric expanding frames to simulate a soft radial glow
-                    for (i in 0 until 6) {
-                        val strokeWidth = 2.dp.toPx()
-                        val inset = (i * 4).dp.toPx()
-                        val r = 24.dp.toPx() + inset
-                        drawRoundRect(
-                            color = glowColor,
-                            alpha = glowAlpha * (1f - i / 6f),
-                            topLeft = Offset(-inset, -inset),
-                            size = size.copy(
-                                width = size.width + inset * 2,
-                                height = size.height + inset * 2
-                            ),
-                            cornerRadius = CornerRadius(r, r),
-                            style = Stroke(width = strokeWidth)
-                        )
-                    }
-                }
-            }
-            .border(borderWidth, borderColor, RoundedCornerShape(24.dp))
+            .border(borderStrokeWidth, borderStrokeColor, RoundedCornerShape(24.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = Color.White
+            containerColor = containerColor
         )
     ) {
         Column(
@@ -540,7 +491,7 @@ fun CardItem(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                val pulse = if (isActive) imagePulseScaleAnim else 1f
+                                val pulse = imageScaleAnim
                                 scaleX = scaleState * pulse
                                 scaleY = scaleState * pulse
                                 translationX = offsetXState
@@ -572,7 +523,7 @@ fun CardItem(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(36.dp),
+                    .height(44.dp), // Increased height for larger font
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -581,7 +532,7 @@ fun CardItem(
 
                 Text(
                     text = if (card.label.isEmpty() && editMode) "Tap to edit" else card.label,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyMedium.copy(fontSize = 18.sp), // Larger 18sp font
                     fontWeight = FontWeight.Bold,
                     maxLines = 1,
                     textAlign = TextAlign.Center,
@@ -601,7 +552,7 @@ fun CardItem(
                         .size(32.dp)
                         .clip(RoundedCornerShape(16.dp))
                         .background(
-                            if (isActive) Color(0xFFD32F2F) // Match active red theme
+                            if (isActive) Color(0xFFD32F2F)
                             else if (editMode) MaterialTheme.colorScheme.secondary
                             else MaterialTheme.colorScheme.primary
                         )
