@@ -107,9 +107,12 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Category",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
+                text = "Speak Help",
+                style = MaterialTheme.typography.titleLarge.copy(
+                    color = Color(0xFF487E89), // Deep Teal brand color
+                    fontWeight = FontWeight.Black
+                ),
+                modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
             )
 
             LazyColumn(
@@ -209,7 +212,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Speak Help • ${currentPanel?.icon ?: ""} ${currentPanel?.name ?: ""}",
+                    text = "${currentPanel?.icon ?: ""} ${currentPanel?.name ?: ""}",
                     style = MaterialTheme.typography.titleLarge
                 )
                 
@@ -361,15 +364,22 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
 
 @Composable
 fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Unit) {
+    val asdPrimary = Color(0xFF487E89) // Deep Teal from theme
+    val asdOnSurface = Color(0xFF262B30) // Dark Slate from theme
+    
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
-        tonalElevation = if (isSelected) 4.dp else 0.dp
+        color = if (isSelected) asdPrimary.copy(alpha = 0.12f) else Color.White,
+        border = BorderStroke(
+            width = if (isSelected) 2.dp else 1.dp,
+            color = if (isSelected) asdPrimary else Color(0xFFDCD6CD)
+        ),
+        tonalElevation = if (isSelected) 2.dp else 0.dp
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(text = icon, fontSize = 24.sp)
@@ -377,7 +387,8 @@ fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Un
             Text(
                 text = name,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                color = if (isSelected) asdPrimary else asdOnSurface,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
         }
     }
