@@ -25,6 +25,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -109,7 +110,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
             Text(
                 text = "Speak Help",
                 style = MaterialTheme.typography.titleLarge.copy(
-                    color = Color(0xFF487E89), // Deep Teal brand color
+                    color = MaterialTheme.colorScheme.primary, // Dynamically uses theme primary
                     fontWeight = FontWeight.Black
                 ),
                 modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
@@ -201,7 +202,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .weight(0.75f)
                 .padding(12.dp) // Reduced outer padding from 24.dp to 12.dp
                 .clip(RoundedCornerShape(24.dp)) // Adjusted corner radius to match
-                .background(Color(0xFFE5DFD5)) // Premium warm-sand background for card contrast
+                .background(if (isSystemInDarkTheme()) Color(0xFF252525) else Color(0xFFE5DFD5)) // Soothing charcoal in dark mode vs warm sand
                 .padding(12.dp) // Reduced inner padding from 24.dp to 12.dp
         ) {
             val currentPanel = panels.getOrNull(selectedIndex)
@@ -364,17 +365,19 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
 
 @Composable
 fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Unit) {
-    val asdPrimary = Color(0xFF487E89) // Deep Teal from theme
-    val asdOnSurface = Color(0xFF262B30) // Dark Slate from theme
+    val isDark = isSystemInDarkTheme()
+    val primaryColor = MaterialTheme.colorScheme.primary
+    val surfaceColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
     
     Surface(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = if (isSelected) asdPrimary.copy(alpha = 0.12f) else Color.White,
+        color = if (isSelected) primaryColor.copy(alpha = 0.15f) else surfaceColor,
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
-            color = if (isSelected) asdPrimary else Color(0xFFDCD6CD)
+            color = if (isSelected) primaryColor else onSurfaceColor.copy(alpha = 0.15f)
         ),
         tonalElevation = if (isSelected) 2.dp else 0.dp
     ) {
@@ -387,7 +390,7 @@ fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Un
             Text(
                 text = name,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (isSelected) asdPrimary else asdOnSurface,
+                color = if (isSelected) primaryColor else onSurfaceColor,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
             )
         }
@@ -417,8 +420,12 @@ fun CardItem(
         label = "cardAlpha"
     )
 
+    val isDark = isSystemInDarkTheme()
+    val activeBgColor = if (isDark) Color(0xFF332F1A) else Color(0xFFFFF9E6)
+    val inactiveBgColor = MaterialTheme.colorScheme.surface
+
     val containerColor by animateColorAsState(
-        targetValue = if (isActive) Color(0xFFFFF9E6) else Color.White, // Warm pastel cream/yellow when active
+        targetValue = if (isActive) activeBgColor else inactiveBgColor,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "containerColor"
     )
@@ -435,8 +442,11 @@ fun CardItem(
         label = "imageScale"
     )
 
+    val activeBorderColor = if (isDark) Color(0xFFFFD54F) else Color(0xFFFBC02D)
+    val inactiveBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f)
+
     val borderStrokeColor by animateColorAsState(
-        targetValue = if (isActive) Color(0xFFFBC02D) else Color(0xFFDCD6CD), // Warm amber/yellow outline when active
+        targetValue = if (isActive) activeBorderColor else inactiveBorderColor,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "borderColor"
     )
@@ -453,8 +463,11 @@ fun CardItem(
         label = "textScale"
     )
 
+    val activeTextColor = if (isDark) Color(0xFFFFB74D) else Color(0xFFE65100)
+    val inactiveTextColor = MaterialTheme.colorScheme.onSurface
+
     val textColor by animateColorAsState(
-        targetValue = if (isActive) Color(0xFFE65100) else MaterialTheme.colorScheme.onSurface, // Warm amber/orange vs onSurface
+        targetValue = if (isActive) activeTextColor else inactiveTextColor,
         animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing),
         label = "textColor"
     )
@@ -485,7 +498,7 @@ fun CardItem(
                     .weight(1f)
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(Color(0xFFFAF7F1)),
+                    .background(if (isDark) Color(0xFF121212) else Color(0xFFFAF7F1)),
                 contentAlignment = Alignment.Center
             ) {
                 if (card.hasImage()) {

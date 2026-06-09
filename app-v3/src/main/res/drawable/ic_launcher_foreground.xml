@@ -9,18 +9,8 @@
         android:fillColor="#487E89"
         android:pathData="M32,24h44a16,16 0,0 1 16,16v20a16,16 0,0 1 -16,16h-24l-14,12v-12a16,16 0,0 1 -16,-16v-20a16,16 0,0 1 16,-16z"/>
     
-    <!-- Play Symbol in Center (Sun Yellow #FFD166) -->
-    <path
-        android:fillColor="#FFD166"
-        android:pathData="M48,36l18,11l-18,11z"/>
-
-    <!-- Small Card/Icon in top right corner of bubble (Soft Coral #EE6C4D) -->
+    <!-- Heart Symbol in Center (Soft Coral #EE6C4D) -->
     <path
         android:fillColor="#EE6C4D"
-        android:pathData="M74,32a4,4 0,0,1 4,4v8a4,4 0,0,1 -4,4h-8a4,4 0,0,1 -4,-4v-8a4,4 0,0,1 4,-4z"/>
-    
-    <!-- Sound Waves on the Right (Soft Coral #EE6C4D) -->
-    <path
-        android:fillColor="#EE6C4D"
-        android:pathData="M84,36a16,16 0,0 1 0,22l3,-3a12,12 0,0 0 0,-16z"/>
+        android:pathData="M54,58 C54,58 38,48 38,38 A8,8 0,0,1 54,34 A8,8 0,0,1 70,38 C70,48 54,58 54,58 Z"/>
 </vector>
