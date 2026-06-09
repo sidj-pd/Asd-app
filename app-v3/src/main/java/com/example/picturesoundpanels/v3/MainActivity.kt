@@ -37,8 +37,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.Image
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
@@ -110,14 +112,26 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
                 .padding(16.dp)
         ) {
-            Text(
-                text = "Speak Help",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    color = MaterialTheme.colorScheme.primary, // Dynamically uses theme primary
-                    fontWeight = FontWeight.Black
-                ),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(bottom = 16.dp, start = 4.dp)
-            )
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.speak_logo),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                )
+                Text(
+                    text = "Speak Help",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        color = MaterialTheme.colorScheme.primary, // Dynamically uses theme primary
+                        fontWeight = FontWeight.Black
+                    )
+                )
+            }
 
             LazyColumn(
                 modifier = Modifier.weight(1f),
