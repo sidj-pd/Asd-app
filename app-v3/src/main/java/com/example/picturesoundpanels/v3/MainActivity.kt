@@ -18,7 +18,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
@@ -152,7 +154,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .weight(0.75f)
                 .padding(24.dp)
                 .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .background(Color(0xFFE5DFD5)) // Premium warm-sand background for card contrast
                 .padding(24.dp)
         ) {
             val currentPanel = panels.getOrNull(selectedIndex)
@@ -342,43 +344,77 @@ fun CardItem(
     onImageUpdate: (Float, Float, Float) -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "playback")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isActive) 1.06f else 1f,
+    
+    // Smooth scaling pulsing
+    val scaleAnim by infiniteTransition.animateFloat(
+        initialValue = 1.01f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearOutSlowInEasing),
+            animation = tween(350, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isActive) 0.85f else 1f,
+    
+    // Playful wiggle (rotation)
+    val wiggleAnim by infiniteTransition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
         animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = LinearOutSlowInEasing),
+            animation = tween(120, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "alpha"
+        label = "wiggle"
     )
+    
+    // Playful bounce (translationY)
+    val bounceAnim by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = -12f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(180, easing = FastOutLinearInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "bounce"
+    )
+
+    // Glowing border width pulsing
+    val borderWidthAnim by infiniteTransition.animateFloat(
+        initialValue = 3f,
+        targetValue = 6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(400, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "borderWidth"
+    )
+
+    val activeScale = if (isActive) scaleAnim else 1f
+    val activeRotation = if (isActive) wiggleAnim else 0f
+    val activeTranslationY = if (isActive) bounceAnim else 0f
+    val borderWidth = (if (isActive) borderWidthAnim else 1f).dp
+    val borderColor = if (isActive) Color(0xFFEE6C4D) else Color(0xFFDCD6CD) // Coral active border vs soft sand-grey
 
     ElevatedCard(
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-                this.alpha = alpha
+                scaleX = activeScale
+                scaleY = activeScale
+                rotationZ = activeRotation
+                this.translationY = activeTranslationY.dp.toPx()
             }
+            .border(borderWidth, borderColor, RoundedCornerShape(24.dp))
             .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
-            containerColor = Color(0xFFFFFDF9)
+            containerColor = Color.White
         )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(12.dp),
+                .padding(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
@@ -429,30 +465,46 @@ fun CardItem(
                 }
             }
             
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(36.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
                     text = if (card.label.isEmpty() && editMode) "Tap to edit" else card.label,
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold,
+                    maxLines = 1,
                     modifier = Modifier.weight(1f)
                 )
                 
-                Button(
-                    onClick = onClick,
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
-                    )
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(
+                            if (isActive) Color(0xFFEE6C4D)
+                            else if (editMode) MaterialTheme.colorScheme.secondary
+                            else MaterialTheme.colorScheme.primary
+                        )
+                        .clickable { onClick() },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Text(if (editMode) (if (card.hasAudio()) "Play/Rec" else "Record") else "Play")
+                    Text(
+                        text = if (editMode) {
+                            if (card.hasAudio()) "🔊" else "🎙️"
+                        } else {
+                            "▶"
+                        },
+                        color = Color.White,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
