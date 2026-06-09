@@ -347,55 +347,31 @@ fun CardItem(
     val currentCard by rememberUpdatedState(card)
     val currentOnImageUpdate by rememberUpdatedState(onImageUpdate)
     
-    // Smooth scaling pulsing
+    // Smooth scaling pulsing (Calm, 1.0x to 1.03x over 1500ms)
     val scaleAnim by infiniteTransition.animateFloat(
-        initialValue = 1.01f,
-        targetValue = 1.05f,
+        initialValue = 1.00f,
+        targetValue = 1.03f,
         animationSpec = infiniteRepeatable(
-            animation = tween(350, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
-    
-    // Playful wiggle (rotation)
-    val wiggleAnim by infiniteTransition.animateFloat(
-        initialValue = -3f,
-        targetValue = 3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(120, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "wiggle"
-    )
-    
-    // Playful bounce (translationY)
-    val bounceAnim by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -12f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(180, easing = FastOutLinearInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "bounce"
-    )
 
-    // Glowing border width pulsing
+    // Red border width pulsing in opposite phase (6dp down to 2dp)
     val borderWidthAnim by infiniteTransition.animateFloat(
-        initialValue = 3f,
-        targetValue = 6f,
+        initialValue = 6f,
+        targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(400, easing = FastOutSlowInEasing),
+            animation = tween(1500, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "borderWidth"
     )
 
     val activeScale = if (isActive) scaleAnim else 1f
-    val activeRotation = if (isActive) wiggleAnim else 0f
-    val activeTranslationY = if (isActive) bounceAnim else 0f
     val borderWidth = (if (isActive) borderWidthAnim else 1f).dp
-    val borderColor = if (isActive) Color(0xFFEE6C4D) else Color(0xFFDCD6CD) // Coral active border vs soft sand-grey
+    val borderColor = if (isActive) Color(0xFFD32F2F) else Color(0xFFDCD6CD) // Red active border vs soft sand-grey
 
     ElevatedCard(
         modifier = Modifier
@@ -403,8 +379,6 @@ fun CardItem(
             .graphicsLayer {
                 scaleX = activeScale
                 scaleY = activeScale
-                rotationZ = activeRotation
-                this.translationY = activeTranslationY.dp.toPx()
             }
             .border(borderWidth, borderColor, RoundedCornerShape(24.dp))
             .clickable { onClick() },
