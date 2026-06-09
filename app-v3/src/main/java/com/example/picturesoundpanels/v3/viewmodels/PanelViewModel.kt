@@ -19,6 +19,7 @@ import java.io.File
 class PanelViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("picture_sound_panels", Context.MODE_PRIVATE)
     private val PANELS_KEY = "panels"
+    private val DARK_MODE_KEY = "dark_mode"
 
     private val _panels = mutableStateListOf<PanelModel>()
     val panels: List<PanelModel> = _panels
@@ -32,12 +33,16 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
     private val _activePlaybackCardIndex = mutableStateOf(-1)
     val activePlaybackCardIndex: State<Int> = _activePlaybackCardIndex
 
+    private val _darkMode = mutableStateOf(false)
+    val darkMode: State<Boolean> = _darkMode
+
     private var player: MediaPlayer? = null
     private var recorder: MediaRecorder? = null
     private val playbackHandler = Handler(Looper.getMainLooper())
     private val CHILD_PLAYBACK_FALLBACK_MS = 10000L
 
     init {
+        _darkMode.value = prefs.getBoolean(DARK_MODE_KEY, false)
         loadPanels()
     }
 
@@ -218,6 +223,11 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             }
             savePanels()
         }
+    }
+
+    fun setDarkMode(enabled: Boolean) {
+        _darkMode.value = enabled
+        prefs.edit().putBoolean(DARK_MODE_KEY, enabled).apply()
     }
 
     override fun onCleared() {

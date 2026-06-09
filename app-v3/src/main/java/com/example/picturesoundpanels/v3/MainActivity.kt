@@ -75,8 +75,10 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            AsdAppTheme {
-                MainScreen()
+            val viewModel: PanelViewModel = viewModel()
+            val isDark by viewModel.darkMode
+            AsdAppTheme(darkTheme = isDark) {
+                MainScreen(viewModel)
             }
         }
     }
@@ -214,14 +216,33 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
             ) {
                 Text(
                     text = "${currentPanel?.icon ?: ""} ${currentPanel?.name ?: ""}",
-                    style = MaterialTheme.typography.titleLarge
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onBackground // Correctly adapts to light/dark themes
                 )
                 
-                Button(
-                    onClick = { viewModel.toggleEditMode() },
-                    shape = RoundedCornerShape(16.dp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(if (editMode) "Done" else "Edit")
+                    if (editMode) {
+                        Text(
+                            text = "Dark Mode",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Switch(
+                            checked = viewModel.darkMode.value,
+                            onCheckedChange = { viewModel.setDarkMode(it) }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    
+                    Button(
+                        onClick = { viewModel.toggleEditMode() },
+                        shape = RoundedCornerShape(16.dp)
+                    ) {
+                        Text(if (editMode) "Done" else "Edit")
+                    }
                 }
             }
 
