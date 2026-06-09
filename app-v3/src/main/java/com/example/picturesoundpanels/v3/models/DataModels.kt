@@ -4,7 +4,7 @@ import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
-data class Card(
+data class CardModel(
     var imageUri: String = "",
     var label: String = "",
     var audioPath: String = "",
@@ -40,8 +40,8 @@ data class Card(
     }
 
     companion object {
-        fun fromJson(obj: JSONObject): Card {
-            return Card(
+        fun fromJson(obj: JSONObject): CardModel {
+            return CardModel(
                 imageUri = obj.optString("imageUri", ""),
                 label = obj.optString("label", ""),
                 audioPath = obj.optString("audioPath", ""),
@@ -53,10 +53,10 @@ data class Card(
     }
 }
 
-data class Panel(
+data class PanelModel(
     var icon: String,
     var name: String,
-    val cards: MutableList<Card> = MutableList(4) { Card() }
+    val cards: MutableList<CardModel> = MutableList(4) { CardModel() }
 ) {
     fun toJson(): JSONObject {
         return JSONObject().apply {
@@ -68,9 +68,13 @@ data class Panel(
         }
     }
 
+    fun copy(): PanelModel {
+        return PanelModel(icon, name, cards.map { it.copy() }.toMutableList())
+    }
+
     companion object {
-        fun fromJson(obj: JSONObject): Panel {
-            val panel = Panel(
+        fun fromJson(obj: JSONObject): PanelModel {
+            val panel = PanelModel(
                 icon = obj.optString("icon", "⭐"),
                 name = obj.optString("name", "Panel")
             )
@@ -78,11 +82,11 @@ data class Panel(
             if (cardArray != null) {
                 panel.cards.clear()
                 for (i in 0 until cardArray.length().coerceAtMost(4)) {
-                    panel.cards.add(Card.fromJson(cardArray.getJSONObject(i)))
+                    panel.cards.add(CardModel.fromJson(cardArray.getJSONObject(i)))
                 }
             }
             while (panel.cards.size < 4) {
-                panel.cards.add(Card())
+                panel.cards.add(CardModel())
             }
             return panel
         }

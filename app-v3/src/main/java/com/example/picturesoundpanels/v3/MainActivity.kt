@@ -39,7 +39,8 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.picturesoundpanels.v3.models.Card
+import com.example.picturesoundpanels.v3.models.CardModel
+import com.example.picturesoundpanels.v3.models.PanelModel
 import com.example.picturesoundpanels.v3.ui.theme.AsdAppTheme
 import com.example.picturesoundpanels.v3.viewmodels.PanelViewModel
 
@@ -255,7 +256,7 @@ fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Un
 
 @Composable
 fun CardItem(
-    card: Card, 
+    card: CardModel, 
     editMode: Boolean, 
     isActive: Boolean, 
     onClick: () -> Unit,
@@ -392,7 +393,7 @@ fun PanelEditorDialog(initialIcon: String, initialName: String, onDismiss: () ->
 
 @Composable
 fun CardEditorDialog(
-    card: Card, 
+    card: CardModel, 
     onDismiss: () -> Unit, 
     onSave: (String) -> Unit, 
     onImagePick: (Uri) -> Unit,

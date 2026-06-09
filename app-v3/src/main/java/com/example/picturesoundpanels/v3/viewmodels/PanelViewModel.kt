@@ -6,24 +6,22 @@ import android.media.MediaPlayer
 import android.media.MediaRecorder
 import android.os.Handler
 import android.os.Looper
-import android.widget.Toast
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
-import com.example.picturesoundpanels.v3.models.Card
-import com.example.picturesoundpanels.v3.models.Panel
+import com.example.picturesoundpanels.v3.models.CardModel
+import com.example.picturesoundpanels.v3.models.PanelModel
 import org.json.JSONArray
 import org.json.JSONException
 import java.io.File
-import java.io.IOException
 
 class PanelViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("picture_sound_panels", Context.MODE_PRIVATE)
     private val PANELS_KEY = "panels"
 
-    private val _panels = mutableStateListOf<Panel>()
-    val panels: List<Panel> = _panels
+    private val _panels = mutableStateListOf<PanelModel>()
+    val panels: List<PanelModel> = _panels
 
     private val _selectedPanelIndex = mutableStateOf(0)
     val selectedPanelIndex: State<Int> = _selectedPanelIndex
@@ -31,7 +29,6 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
     private val _editMode = mutableStateOf(false)
     val editMode: State<Boolean> = _editMode
 
-    // Playback State
     private val _activePlaybackCardIndex = mutableStateOf(-1)
     val activePlaybackCardIndex: State<Int> = _activePlaybackCardIndex
 
@@ -54,7 +51,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             val array = JSONArray(json)
             _panels.clear()
             for (i in 0 until array.length()) {
-                _panels.add(Panel.fromJson(array.getJSONObject(i)))
+                _panels.add(PanelModel.fromJson(array.getJSONObject(i)))
             }
         } catch (e: JSONException) {
             _panels.clear()
@@ -70,10 +67,10 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun addDefaultPanels() {
         _panels.clear()
-        _panels.add(Panel("🍎", "Fruits"))
-        _panels.add(Panel("🐶", "Animals"))
-        _panels.add(Panel("👨", "Family"))
-        _panels.add(Panel("😊", "Feelings"))
+        _panels.add(PanelModel("🍎", "Fruits"))
+        _panels.add(PanelModel("🐶", "Animals"))
+        _panels.add(PanelModel("👨", "Family"))
+        _panels.add(PanelModel("😊", "Feelings"))
         savePanels()
     }
 
@@ -91,7 +88,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun addPanel(icon: String, name: String) {
-        _panels.add(Panel(icon, name))
+        _panels.add(PanelModel(icon, name))
         _selectedPanelIndex.value = _panels.size - 1
         savePanels()
     }
@@ -101,7 +98,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             val panel = _panels[index]
             panel.icon = icon
             panel.name = name
-            _panels[index] = panel.copy() 
+            _panels[index] = panel.copy()
             savePanels()
         }
     }
@@ -114,20 +111,17 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateCard(panelIndex: Int, cardIndex: Int, update: (Card) -> Unit) {
+    fun updateCard(panelIndex: Int, cardIndex: Int, update: (CardModel) -> Unit) {
         if (panelIndex in _panels.indices) {
             val panel = _panels[panelIndex]
             if (cardIndex in panel.cards.indices) {
                 update(panel.cards[cardIndex])
-                // Create a deep copy to ensure state update triggers recomposition
-                val updatedCards = panel.cards.map { it.copy() }.toMutableList()
-                _panels[panelIndex] = panel.copy(cards = updatedCards)
+                _panels[panelIndex] = panel.copy()
                 savePanels()
             }
         }
     }
 
-    // Media Actions
     fun playCardAudio(cardIndex: Int) {
         if (_editMode.value || _activePlaybackCardIndex.value != -1) return
         val card = _panels[_selectedPanelIndex.value].cards[cardIndex]
@@ -138,7 +132,6 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             _activePlaybackCardIndex.value = -1
         }
 
-        // Fallback timer for child safety
         playbackHandler.postDelayed({
             if (_activePlaybackCardIndex.value == cardIndex) {
                 stopPlayback()
