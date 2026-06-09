@@ -176,34 +176,93 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Card Grid
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                currentPanel?.let { panel ->
-                    items(4) { cardIndex ->
-                        CardItem(
-                            card = panel.cards[cardIndex],
-                            editMode = editMode,
-                            isActive = activePlaybackIndex == cardIndex,
-                            onClick = {
-                                if (editMode) {
-                                    showCardDialog = cardIndex
-                                } else {
-                                    viewModel.playCardAudio(cardIndex)
+            // Card Grid (Fixed 2x2 Layout to prevent height collapse)
+            currentPanel?.let { panel ->
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            CardItem(
+                                card = panel.cards[0],
+                                editMode = editMode,
+                                isActive = activePlaybackIndex == 0,
+                                onClick = {
+                                    if (editMode) showCardDialog = 0
+                                    else viewModel.playCardAudio(0)
+                                },
+                                onImageUpdate = { scale, x, y ->
+                                    viewModel.updateCard(selectedIndex, 0) {
+                                        it.imageScale = scale
+                                        it.imageOffsetX = x
+                                        it.imageOffsetY = y
+                                    }
                                 }
-                            },
-                            onImageUpdate = { scale, x, y ->
-                                viewModel.updateCard(selectedIndex, cardIndex) {
-                                    it.imageScale = scale
-                                    it.imageOffsetX = x
-                                    it.imageOffsetY = y
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            CardItem(
+                                card = panel.cards[1],
+                                editMode = editMode,
+                                isActive = activePlaybackIndex == 1,
+                                onClick = {
+                                    if (editMode) showCardDialog = 1
+                                    else viewModel.playCardAudio(1)
+                                },
+                                onImageUpdate = { scale, x, y ->
+                                    viewModel.updateCard(selectedIndex, 1) {
+                                        it.imageScale = scale
+                                        it.imageOffsetX = x
+                                        it.imageOffsetY = y
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            CardItem(
+                                card = panel.cards[2],
+                                editMode = editMode,
+                                isActive = activePlaybackIndex == 2,
+                                onClick = {
+                                    if (editMode) showCardDialog = 2
+                                    else viewModel.playCardAudio(2)
+                                },
+                                onImageUpdate = { scale, x, y ->
+                                    viewModel.updateCard(selectedIndex, 2) {
+                                        it.imageScale = scale
+                                        it.imageOffsetX = x
+                                        it.imageOffsetY = y
+                                    }
+                                }
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                            CardItem(
+                                card = panel.cards[3],
+                                editMode = editMode,
+                                isActive = activePlaybackIndex == 3,
+                                onClick = {
+                                    if (editMode) showCardDialog = 3
+                                    else viewModel.playCardAudio(3)
+                                },
+                                onImageUpdate = { scale, x, y ->
+                                    viewModel.updateCard(selectedIndex, 3) {
+                                        it.imageScale = scale
+                                        it.imageOffsetX = x
+                                        it.imageOffsetY = y
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -527,7 +586,14 @@ fun CardEditorDialog(
             }
         },
         confirmButton = { Button(onClick = { onSave(label) }) { Text("Save") } },
-        dismissButton = { TextButton(onClick = { card.clear(); onDismiss() }) { Text("Clear", color = Color.Red) } }
+        dismissButton = {
+            TextButton(onClick = {
+                viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.clear() }
+                onDismiss()
+            }) {
+                Text("Clear", color = Color.Red)
+            }
+        }
     )
 }
 
