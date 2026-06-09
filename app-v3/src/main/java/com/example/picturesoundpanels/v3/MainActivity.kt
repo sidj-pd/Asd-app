@@ -44,6 +44,7 @@ import com.example.picturesoundpanels.v3.models.CardModel
 import com.example.picturesoundpanels.v3.models.PanelModel
 import com.example.picturesoundpanels.v3.ui.theme.AsdAppTheme
 import com.example.picturesoundpanels.v3.viewmodels.PanelViewModel
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -59,6 +60,7 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun MainScreen(viewModel: PanelViewModel = viewModel()) {
+    val context = LocalContext.current
     val panels = viewModel.panels
     val selectedIndex by viewModel.selectedPanelIndex
     val editMode by viewModel.editMode
@@ -219,9 +221,30 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                     showCardDialog = null
                 },
                 onImagePick = { uri ->
-                    viewModel.updateCard(selectedIndex, cardIndex) { 
-                        it.imageUri = uri.toString()
-                        it.resetImagePosition()
+                    try {
+                        val inputStream = context.contentResolver.openInputStream(uri)
+                        val oldUriString = card.imageUri
+                        if (oldUriString.startsWith("file://")) {
+                            try {
+                                val oldFile = File(Uri.parse(oldUriString).path ?: "")
+                                if (oldFile.exists()) oldFile.delete()
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                            }
+                        }
+                        val localFile = File(context.filesDir, "card_${selectedIndex}_${cardIndex}_${System.currentTimeMillis()}_image.jpg")
+                        inputStream?.use { input ->
+                            localFile.outputStream().use { output ->
+                                input.copyTo(output)
+                            }
+                        }
+                        viewModel.updateCard(selectedIndex, cardIndex) { 
+                            it.imageUri = Uri.fromFile(localFile).toString()
+                            it.resetImagePosition()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(context, "Error saving image: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                     }
                 },
                 viewModel = viewModel,
@@ -411,15 +434,7 @@ fun CardEditorDialog(
     val context = LocalContext.current
     
     val imageLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        uri?.let {
-            try {
-                val flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-                context.contentResolver.takePersistableUriPermission(it, flags)
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-            onImagePick(it)
-        }
+        uri?.let { onImagePick(it) }
     }
 
     var isRecording by remember { mutableStateOf(false) }
