@@ -1,5 +1,6 @@
 package com.example.picturesoundpanels.v3.ui.theme
 
+import android.graphics.Typeface
 import androidx.compose.material3.Typography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -7,7 +8,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 // Child-friendly system rounded font
-val RoundedFontFamily = FontFamily("sans-serif-rounded")
+val RoundedFontFamily = FontFamily(Typeface.create("sans-serif-rounded", Typeface.NORMAL))
 
 val Typography = Typography(
     bodyLarge = TextStyle(

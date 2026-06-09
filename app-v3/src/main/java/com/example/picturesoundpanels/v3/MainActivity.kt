@@ -36,7 +36,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -434,6 +438,28 @@ fun CardItem(
         label = "textColorProgress"
     )
 
+    // Pulse animation for the glowing shadow opacity (0.3f to 0.7f over 1500ms)
+    val glowAlphaAnim by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    // Pulse animation for the image inside the card (1.00f to 1.06f over 1500ms)
+    val imagePulseScaleAnim by infiniteTransition.animateFloat(
+        initialValue = 1.00f,
+        targetValue = 1.06f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "imagePulseScale"
+    )
+
     val activeScale = if (isActive) scaleAnim else 1f
     val borderWidth = (if (isActive) borderWidthAnim else 1f).dp
     val borderColor = if (isActive) Color(0xFFD32F2F) else Color(0xFFDCD6CD) // Red active border vs soft sand-grey
@@ -455,6 +481,29 @@ fun CardItem(
             .graphicsLayer {
                 scaleX = activeScale
                 scaleY = activeScale
+            }
+            .drawBehind {
+                if (isActive) {
+                    val glowColor = Color(0xFFD32F2F) // Vibrant Red glow for the active panel
+                    val glowAlpha = glowAlphaAnim
+                    // Draw 6 concentric expanding frames to simulate a soft radial glow
+                    for (i in 0 until 6) {
+                        val strokeWidth = 2.dp.toPx()
+                        val inset = (i * 4).dp.toPx()
+                        val r = 24.dp.toPx() + inset
+                        drawRoundRect(
+                            color = glowColor,
+                            alpha = glowAlpha * (1f - i / 6f),
+                            topLeft = Offset(-inset, -inset),
+                            size = size.copy(
+                                width = size.width + inset * 2,
+                                height = size.height + inset * 2
+                            ),
+                            cornerRadius = CornerRadius(r, r),
+                            style = Stroke(width = strokeWidth)
+                        )
+                    }
+                }
             }
             .border(borderWidth, borderColor, RoundedCornerShape(24.dp))
             .clickable { onClick() },
@@ -491,8 +540,9 @@ fun CardItem(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                scaleX = scaleState
-                                scaleY = scaleState
+                                val pulse = if (isActive) imagePulseScaleAnim else 1f
+                                scaleX = scaleState * pulse
+                                scaleY = scaleState * pulse
                                 translationX = offsetXState
                                 translationY = offsetYState
                             }
