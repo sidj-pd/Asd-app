@@ -5,7 +5,6 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -18,6 +17,8 @@ import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -51,19 +52,38 @@ public class MainActivity extends Activity {
     private static final String PREFS_NAME = "picture_sound_panels";
     private static final String PANELS_KEY = "panels";
     private static final int MAX_CARDS = 4;
+    private static final long CHILD_PLAYBACK_FALLBACK_MS = 10000;
+    private static final int COLOR_APP_BACKGROUND = Color.rgb(248, 244, 238);
+    private static final int COLOR_SIDE_BACKGROUND = Color.rgb(237, 231, 221);
+    private static final int COLOR_MAIN_BACKGROUND = Color.rgb(255, 252, 247);
+    private static final int COLOR_GRID_BACKGROUND = Color.rgb(222, 234, 228);
+    private static final int COLOR_PRIMARY = Color.rgb(72, 126, 137);
+    private static final int COLOR_PRIMARY_DARK = Color.rgb(45, 92, 102);
+    private static final int COLOR_ACCENT = Color.rgb(94, 151, 132);
+    private static final int COLOR_PLAY = Color.rgb(119, 92, 72);
+    private static final int COLOR_PLAY_DARK = Color.rgb(87, 64, 49);
+    private static final int COLOR_TEXT = Color.rgb(38, 43, 48);
+    private static final int COLOR_MUTED_TEXT = Color.rgb(92, 100, 104);
+    private static final int COLOR_CARD_STROKE = Color.rgb(178, 187, 181);
 
     private final List<Panel> panels = new ArrayList<>();
+    private final Handler playbackHandler = new Handler(Looper.getMainLooper());
     private LinearLayout panelList;
     private GridLayout cardGrid;
     private Button editButton;
     private Button addPanelButton;
+    private Button removePanelButton;
     private TextView titleText;
     private int selectedPanelIndex = 0;
     private int pendingImageCardIndex = -1;
     private int pendingRecordCardIndex = -1;
     private boolean editMode = false;
+    private boolean childPlaybackLocked = false;
+    private int activePlaybackCardIndex = -1;
     private MediaRecorder recorder;
     private MediaPlayer player;
+    private AnimatorSet childPlaybackAnimation;
+    private View activePlaybackView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,6 +96,19 @@ public class MainActivity extends Activity {
     @Override
     protected void onStop() {
         super.onStop();
+        playbackHandler.removeCallbacksAndMessages(null);
+        childPlaybackLocked = false;
+        activePlaybackCardIndex = -1;
+        if (childPlaybackAnimation != null) {
+            childPlaybackAnimation.cancel();
+            childPlaybackAnimation = null;
+        }
+        if (activePlaybackView != null) {
+            activePlaybackView.setScaleX(1.0f);
+            activePlaybackView.setScaleY(1.0f);
+            activePlaybackView.setAlpha(1.0f);
+            activePlaybackView = null;
+        }
         stopPlayback();
         stopRecording(false);
         savePanels();
@@ -84,21 +117,21 @@ public class MainActivity extends Activity {
     private void buildLayout() {
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.HORIZONTAL);
-        root.setBackgroundColor(Color.rgb(246, 248, 250));
+        root.setBackgroundColor(COLOR_APP_BACKGROUND);
         root.setPadding(0, getStatusBarTopPadding(), 0, 0);
         setContentView(root);
 
         LinearLayout side = new LinearLayout(this);
         side.setOrientation(LinearLayout.VERTICAL);
-        side.setPadding(dp(10), dp(10), dp(10), dp(10));
-        side.setBackgroundColor(Color.rgb(232, 238, 245));
-        root.addView(side, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 17));
+        side.setPadding(dp(12), dp(12), dp(12), dp(12));
+        side.setBackgroundColor(COLOR_SIDE_BACKGROUND);
+        root.addView(side, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 19));
 
         TextView sideTitle = new TextView(this);
         sideTitle.setText("Panels");
-        sideTitle.setTextSize(20);
+        sideTitle.setTextSize(22);
         sideTitle.setTypeface(Typeface.DEFAULT_BOLD);
-        sideTitle.setTextColor(Color.rgb(30, 45, 65));
+        sideTitle.setTextColor(COLOR_TEXT);
         side.addView(sideTitle, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         ScrollView scrollView = new ScrollView(this);
@@ -107,17 +140,29 @@ public class MainActivity extends Activity {
         scrollView.addView(panelList);
         side.addView(scrollView, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
-        addPanelButton = new Button(this);
-        addPanelButton.setText("+ Panel");
-        addPanelButton.setAllCaps(false);
+        LinearLayout panelActions = new LinearLayout(this);
+        panelActions.setOrientation(LinearLayout.HORIZONTAL);
+        side.addView(panelActions, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        addPanelButton = makeWarmButton("+ Add", COLOR_ACCENT, COLOR_PRIMARY_DARK);
         addPanelButton.setOnClickListener(v -> showPanelEditor(-1));
-        side.addView(addPanelButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        panelActions.addView(addPanelButton, new LinearLayout.LayoutParams(0, dp(52), 1));
+
+        removePanelButton = makeWarmButton("- Remove", COLOR_PLAY, COLOR_PLAY_DARK);
+        removePanelButton.setOnClickListener(v -> {
+            if (panels.size() > 1) {
+                confirmDeletePanel(selectedPanelIndex);
+            }
+        });
+        LinearLayout.LayoutParams removeParams = new LinearLayout.LayoutParams(0, dp(52), 1);
+        removeParams.setMargins(dp(8), 0, 0, 0);
+        panelActions.addView(removePanelButton, removeParams);
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
-        main.setPadding(dp(12), dp(8), dp(12), dp(12));
-        main.setBackground(makeRoundedBackground(Color.rgb(252, 253, 255), Color.rgb(172, 196, 224), 1));
-        root.addView(main, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 83));
+        main.setPadding(dp(14), dp(10), dp(14), dp(14));
+        main.setBackground(makeRoundedBackground(COLOR_MAIN_BACKGROUND, Color.rgb(207, 197, 184), 1));
+        root.addView(main, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 81));
 
         LinearLayout header = new LinearLayout(this);
         header.setOrientation(LinearLayout.HORIZONTAL);
@@ -125,25 +170,27 @@ public class MainActivity extends Activity {
         main.addView(header, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         titleText = new TextView(this);
-        titleText.setTextSize(24);
+        titleText.setTextSize(26);
         titleText.setTypeface(Typeface.DEFAULT_BOLD);
-        titleText.setTextColor(Color.rgb(24, 36, 52));
+        titleText.setTextColor(COLOR_TEXT);
         header.addView(titleText, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
-        editButton = new Button(this);
-        editButton.setAllCaps(false);
+        editButton = makeWarmButton("Edit", COLOR_PRIMARY, COLOR_PRIMARY_DARK);
         editButton.setOnClickListener(v -> {
             editMode = !editMode;
+            if (editMode) {
+                finishChildPlayback();
+            }
             renderAll();
         });
-        header.addView(editButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        header.addView(editButton, new LinearLayout.LayoutParams(dp(112), dp(52)));
 
         cardGrid = new GridLayout(this);
         cardGrid.setColumnCount(2);
         cardGrid.setRowCount(2);
         cardGrid.setUseDefaultMargins(true);
-        cardGrid.setPadding(dp(3), dp(3), dp(3), dp(3));
-        cardGrid.setBackground(makeRoundedBackground(Color.rgb(213, 226, 240), Color.rgb(74, 118, 168), 2));
+        cardGrid.setPadding(dp(5), dp(5), dp(5), dp(5));
+        cardGrid.setBackground(makeRoundedBackground(COLOR_GRID_BACKGROUND, COLOR_PRIMARY, 2));
         main.addView(cardGrid, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
     }
 
@@ -153,9 +200,12 @@ public class MainActivity extends Activity {
         }
         selectedPanelIndex = Math.max(0, Math.min(selectedPanelIndex, panels.size() - 1));
         Panel selectedPanel = panels.get(selectedPanelIndex);
-        titleText.setText("Asd app  •  " + selectedPanel.icon + " " + selectedPanel.name);
+        titleText.setText("Speak Help  •  " + selectedPanel.icon + " " + selectedPanel.name);
         editButton.setText(editMode ? "Done" : "Edit");
+        editButton.setEnabled(!childPlaybackLocked);
         addPanelButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        removePanelButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
+        removePanelButton.setEnabled(panels.size() > 1);
         renderPanelList();
         renderCards(selectedPanel);
         savePanels();
@@ -167,22 +217,27 @@ public class MainActivity extends Activity {
             Panel panel = panels.get(i);
             Button button = new Button(this);
             button.setText(panel.icon + "  " + panel.name);
-            button.setTextSize(16);
+            button.setTextSize(18);
             button.setAllCaps(false);
             button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
-            button.setPadding(dp(8), dp(8), dp(8), dp(8));
-            button.setBackground(makeRoundedBackground(i == selectedPanelIndex ? Color.rgb(198, 225, 255) : Color.WHITE, Color.rgb(150, 167, 185), 2));
+            button.setTextColor(COLOR_TEXT);
+            button.setPadding(dp(12), dp(10), dp(12), dp(10));
+            button.setMinHeight(dp(58));
+            button.setEnabled(editMode || !childPlaybackLocked);
+            button.setBackground(makeRoundedBackground(i == selectedPanelIndex ? Color.rgb(205, 229, 219) : Color.rgb(255, 252, 247), COLOR_CARD_STROKE, 2));
             final int index = i;
             button.setOnClickListener(v -> {
                 selectedPanelIndex = index;
                 renderAll();
             });
             button.setOnLongClickListener(v -> {
-                showPanelEditor(index);
+                if (editMode) {
+                    showPanelEditor(index);
+                }
                 return true;
             });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-            params.setMargins(0, dp(6), 0, dp(6));
+            params.setMargins(0, dp(7), 0, dp(7));
             panelList.addView(button, params);
         }
     }
@@ -197,6 +252,9 @@ public class MainActivity extends Activity {
             params.height = 0;
             params.setMargins(dp(6), dp(6), dp(6), dp(6));
             cardGrid.addView(cardView, params);
+            if (childPlaybackLocked && i == activePlaybackCardIndex) {
+                cardView.post(() -> startChildPlaybackAnimation(cardView));
+            }
         }
     }
 
@@ -204,26 +262,26 @@ public class MainActivity extends Activity {
         LinearLayout cardLayout = new LinearLayout(this);
         cardLayout.setOrientation(LinearLayout.VERTICAL);
         cardLayout.setGravity(Gravity.CENTER);
-        cardLayout.setPadding(dp(6), dp(6), dp(6), dp(6));
-        cardLayout.setBackground(makeRoundedBackground(Color.WHITE, Color.rgb(145, 155, 165), 1));
+        cardLayout.setPadding(dp(8), dp(8), dp(8), dp(8));
+        cardLayout.setBackground(makeRoundedBackground(Color.rgb(255, 253, 249), COLOR_CARD_STROKE, 1));
         cardLayout.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
-            } else {
-                playCardAudioWithAnimation(cardLayout, card);
+            } else if (!childPlaybackLocked) {
+                playCardAudioWithAnimation(cardLayout, card, cardIndex);
             }
         });
 
         FrameLayout imageFrame = new FrameLayout(this);
-        imageFrame.setBackground(makeRoundedBackground(Color.rgb(249, 250, 252), Color.rgb(135, 145, 155), 1));
+        imageFrame.setBackground(makeRoundedBackground(Color.rgb(250, 247, 241), Color.rgb(187, 178, 166), 1));
         cardLayout.addView(imageFrame, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1));
 
         if (card.hasImage()) {
             AdjustableImageView image = new AdjustableImageView(this, card);
             image.setImageURI(Uri.parse(card.imageUri));
             image.setOnClickListener(v -> {
-                if (!editMode && card.hasAudio()) {
-                    playAudio(card.audioPath);
+                if (!editMode && card.hasAudio() && !childPlaybackLocked) {
+                    playCardAudioWithAnimation(cardLayout, card, cardIndex);
                 }
             });
             imageFrame.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -243,47 +301,102 @@ public class MainActivity extends Activity {
             TextView placeholder = new TextView(this);
             placeholder.setGravity(Gravity.CENTER);
             placeholder.setText(editMode ? "+\nAdd picture" : "Empty");
-            placeholder.setTextSize(20);
-            placeholder.setTextColor(Color.rgb(115, 130, 145));
+            placeholder.setTextSize(22);
+            placeholder.setTextColor(COLOR_MUTED_TEXT);
             imageFrame.addView(placeholder, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
 
+        LinearLayout wordAudioRow = new LinearLayout(this);
+        wordAudioRow.setOrientation(LinearLayout.HORIZONTAL);
+        wordAudioRow.setGravity(Gravity.CENTER_VERTICAL);
+        LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(58));
+        rowParams.setMargins(0, dp(6), 0, 0);
+        cardLayout.addView(wordAudioRow, rowParams);
+
         TextView label = new TextView(this);
         label.setText(card.label.isEmpty() ? (editMode ? "Tap to edit" : "") : card.label);
-        label.setTextSize(18);
+        label.setTextSize(21);
         label.setTypeface(Typeface.DEFAULT_BOLD);
-        label.setTextColor(Color.rgb(20, 30, 40));
-        label.setGravity(Gravity.CENTER);
-        label.setSingleLine(false);
-        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        labelParams.setMargins(0, dp(4), 0, dp(3));
-        cardLayout.addView(label, labelParams);
+        label.setTextColor(COLOR_TEXT);
+        label.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+        label.setSingleLine(true);
+        label.setEllipsize(TextUtils.TruncateAt.END);
+        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.MATCH_PARENT, 1);
+        wordAudioRow.addView(label, labelParams);
 
-        Button playButton = new Button(this);
+        Button playButton = makeWarmButton(editMode ? (card.hasAudio() ? "Play / Rec" : "Record") : "Play", COLOR_PLAY, COLOR_PLAY_DARK);
         playButton.setText(editMode ? (card.hasAudio() ? "Play / Rec" : "Record") : "Play");
-        playButton.setAllCaps(false);
-        playButton.setTextColor(Color.WHITE);
-        playButton.setTextSize(14);
-        playButton.setTypeface(Typeface.DEFAULT_BOLD);
-        playButton.setBackground(makeRoundedBackground(Color.rgb(198, 40, 40), Color.rgb(130, 20, 20), 1));
-        playButton.setEnabled(editMode || card.hasAudio());
+        playButton.setEnabled(editMode || (card.hasAudio() && !childPlaybackLocked));
         playButton.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
-            } else if (card.hasAudio()) {
-                playAudio(card.audioPath);
+            } else if (card.hasAudio() && !childPlaybackLocked) {
+                playCardAudioWithAnimation(cardLayout, card, cardIndex);
             }
         });
-        cardLayout.addView(playButton, new LinearLayout.LayoutParams(dp(92), dp(40)));
+        LinearLayout.LayoutParams playParams = new LinearLayout.LayoutParams(dp(112), dp(50));
+        playParams.setMargins(dp(8), 0, 0, 0);
+        wordAudioRow.addView(playButton, playParams);
 
         return cardLayout;
     }
 
-    private void playCardAudioWithAnimation(View cardView, Card card) {
-        popView(cardView, 1.16f, 150, 320);
-        if (card.hasAudio()) {
-            playAudio(card.audioPath);
+    private void playCardAudioWithAnimation(View cardView, Card card, int cardIndex) {
+        if (!card.hasAudio()) {
+            popView(cardView, 1.08f, 120, 240);
+            return;
         }
+        startChildPlayback(cardView, card.audioPath, cardIndex);
+    }
+
+    private void startChildPlayback(View cardView, String path, int cardIndex) {
+        if (childPlaybackLocked) {
+            return;
+        }
+        childPlaybackLocked = true;
+        activePlaybackCardIndex = cardIndex;
+        activePlaybackView = cardView;
+        renderAll();
+        playAudio(path, this::finishChildPlayback);
+        playbackHandler.postDelayed(this::finishChildPlayback, CHILD_PLAYBACK_FALLBACK_MS);
+    }
+
+    private void startChildPlaybackAnimation(View view) {
+        if (childPlaybackAnimation != null) {
+            childPlaybackAnimation.cancel();
+        }
+        activePlaybackView = view;
+        view.bringToFront();
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(view, View.SCALE_X, 1.0f, 1.06f, 1.0f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(view, View.SCALE_Y, 1.0f, 1.06f, 1.0f);
+        ObjectAnimator alpha = ObjectAnimator.ofFloat(view, View.ALPHA, 1.0f, 0.9f, 1.0f);
+        scaleX.setRepeatCount(ObjectAnimator.INFINITE);
+        scaleY.setRepeatCount(ObjectAnimator.INFINITE);
+        alpha.setRepeatCount(ObjectAnimator.INFINITE);
+        scaleX.setDuration(900);
+        scaleY.setDuration(900);
+        alpha.setDuration(900);
+        childPlaybackAnimation = new AnimatorSet();
+        childPlaybackAnimation.playTogether(scaleX, scaleY, alpha);
+        childPlaybackAnimation.start();
+    }
+
+    private void finishChildPlayback() {
+        playbackHandler.removeCallbacksAndMessages(null);
+        stopPlayback();
+        childPlaybackLocked = false;
+        activePlaybackCardIndex = -1;
+        if (childPlaybackAnimation != null) {
+            childPlaybackAnimation.cancel();
+            childPlaybackAnimation = null;
+        }
+        if (activePlaybackView != null) {
+            activePlaybackView.setScaleX(1.0f);
+            activePlaybackView.setScaleY(1.0f);
+            activePlaybackView.setAlpha(1.0f);
+            activePlaybackView = null;
+        }
+        renderAll();
     }
 
     private void popView(View view, float peakScale, long growDuration, long settleDuration) {
@@ -383,9 +496,8 @@ public class MainActivity extends Activity {
         labelInput.setText(card.label);
         form.addView(labelInput);
 
-        Button imageButton = new Button(this);
+        Button imageButton = makeWarmButton(card.hasImage() ? "Change picture" : "Add picture", COLOR_PRIMARY, COLOR_PRIMARY_DARK);
         imageButton.setText(card.hasImage() ? "Change picture" : "Add picture");
-        imageButton.setAllCaps(false);
         imageButton.setOnClickListener(v -> {
             card.label = labelInput.getText().toString().trim();
             pendingImageCardIndex = cardIndex;
@@ -398,7 +510,7 @@ public class MainActivity extends Activity {
             TextView adjustHint = new TextView(this);
             adjustHint.setText("In Edit mode, drag the picture with one finger or pinch with two fingers. These buttons also fine-tune the picture.");
             adjustHint.setTextSize(13);
-            adjustHint.setTextColor(Color.rgb(70, 80, 90));
+            adjustHint.setTextColor(COLOR_MUTED_TEXT);
             form.addView(adjustHint);
 
             LinearLayout zoomRow = new LinearLayout(this);
@@ -420,16 +532,14 @@ public class MainActivity extends Activity {
             form.addView(panRow);
         }
 
-        Button audioButton = new Button(this);
+        Button audioButton = makeWarmButton(card.hasAudio() ? "Play audio" : "No audio yet", COLOR_ACCENT, COLOR_PRIMARY_DARK);
         audioButton.setText(card.hasAudio() ? "Play audio" : "No audio yet");
-        audioButton.setAllCaps(false);
         audioButton.setEnabled(card.hasAudio());
         audioButton.setOnClickListener(v -> playAudio(card.audioPath));
         form.addView(audioButton);
 
-        Button recordButton = new Button(this);
+        Button recordButton = makeWarmButton(card.hasAudio() ? "Record again" : "Record audio", COLOR_PLAY, COLOR_PLAY_DARK);
         recordButton.setText(card.hasAudio() ? "Record again" : "Record audio");
-        recordButton.setAllCaps(false);
         recordButton.setOnClickListener(v -> {
             card.label = labelInput.getText().toString().trim();
             savePanels();
@@ -453,10 +563,20 @@ public class MainActivity extends Activity {
     }
 
     private Button makeAdjustButton(String text, Runnable action) {
+        Button button = makeWarmButton(text, COLOR_PRIMARY, COLOR_PRIMARY_DARK);
+        button.setOnClickListener(v -> action.run());
+        return button;
+    }
+
+    private Button makeWarmButton(String text, int fillColor, int strokeColor) {
         Button button = new Button(this);
         button.setText(text);
         button.setAllCaps(false);
-        button.setOnClickListener(v -> action.run());
+        button.setTextColor(Color.WHITE);
+        button.setTextSize(15);
+        button.setTypeface(Typeface.DEFAULT_BOLD);
+        button.setMinHeight(dp(48));
+        button.setBackground(makeRoundedBackground(fillColor, strokeColor, 1));
         return button;
     }
 
@@ -530,6 +650,10 @@ public class MainActivity extends Activity {
     }
 
     private void playAudio(String path) {
+        playAudio(path, null);
+    }
+
+    private void playAudio(String path, Runnable onComplete) {
         if (path == null || path.isEmpty()) {
             return;
         }
@@ -537,12 +661,20 @@ public class MainActivity extends Activity {
         try {
             player = new MediaPlayer();
             player.setDataSource(path);
-            player.setOnCompletionListener(mp -> stopPlayback());
+            player.setOnCompletionListener(mp -> {
+                stopPlayback();
+                if (onComplete != null) {
+                    onComplete.run();
+                }
+            });
             player.prepare();
             player.start();
         } catch (IOException | RuntimeException ex) {
             stopPlayback();
             Toast.makeText(this, "Could not play audio.", Toast.LENGTH_SHORT).show();
+            if (onComplete != null) {
+                onComplete.run();
+            }
         }
     }
 
@@ -620,7 +752,7 @@ public class MainActivity extends Activity {
 
     private void addDefaultPanels() {
         panels.clear();
-        panels.add(new Panel("🍎", "Food"));
+        panels.add(new Panel("🍎", "Fruits"));
         panels.add(new Panel("🐶", "Animals"));
         panels.add(new Panel("👨", "Family"));
         panels.add(new Panel("😊", "Feelings"));
@@ -629,7 +761,7 @@ public class MainActivity extends Activity {
     private GradientDrawable makeRoundedBackground(int fillColor, int strokeColor, int strokeWidthDp) {
         GradientDrawable drawable = new GradientDrawable();
         drawable.setColor(fillColor);
-        drawable.setCornerRadius(dp(8));
+        drawable.setCornerRadius(dp(10));
         drawable.setStroke(dp(strokeWidthDp), strokeColor);
         return drawable;
     }
