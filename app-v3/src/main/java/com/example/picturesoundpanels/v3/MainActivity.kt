@@ -199,7 +199,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                     else viewModel.playCardAudio(0)
                                 },
                                 onImageUpdate = { scale, x, y ->
-                                    viewModel.updateCard(selectedIndex, 0) {
+                                    viewModel.updateCard(selectedIndex, 0, false) {
                                         it.imageScale = scale
                                         it.imageOffsetX = x
                                         it.imageOffsetY = y
@@ -217,7 +217,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                     else viewModel.playCardAudio(1)
                                 },
                                 onImageUpdate = { scale, x, y ->
-                                    viewModel.updateCard(selectedIndex, 1) {
+                                    viewModel.updateCard(selectedIndex, 1, false) {
                                         it.imageScale = scale
                                         it.imageOffsetX = x
                                         it.imageOffsetY = y
@@ -240,7 +240,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                     else viewModel.playCardAudio(2)
                                 },
                                 onImageUpdate = { scale, x, y ->
-                                    viewModel.updateCard(selectedIndex, 2) {
+                                    viewModel.updateCard(selectedIndex, 2, false) {
                                         it.imageScale = scale
                                         it.imageOffsetX = x
                                         it.imageOffsetY = y
@@ -258,7 +258,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                     else viewModel.playCardAudio(3)
                                 },
                                 onImageUpdate = { scale, x, y ->
-                                    viewModel.updateCard(selectedIndex, 3) {
+                                    viewModel.updateCard(selectedIndex, 3, false) {
                                         it.imageScale = scale
                                         it.imageOffsetX = x
                                         it.imageOffsetY = y
@@ -346,6 +346,10 @@ fun CardItem(
     val infiniteTransition = rememberInfiniteTransition(label = "playback")
     val currentCard by rememberUpdatedState(card)
     val currentOnImageUpdate by rememberUpdatedState(onImageUpdate)
+
+    var scaleState by remember(card) { mutableStateOf(card.imageScale) }
+    var offsetXState by remember(card) { mutableStateOf(card.imageOffsetX) }
+    var offsetYState by remember(card) { mutableStateOf(card.imageOffsetY) }
     
     // Smooth scaling pulsing (Calm, 1.0x to 1.03x over 1500ms)
     val scaleAnim by infiniteTransition.animateFloat(
@@ -415,18 +419,18 @@ fun CardItem(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                scaleX = card.imageScale
-                                scaleY = card.imageScale
-                                translationX = card.imageOffsetX
-                                translationY = card.imageOffsetY
+                                scaleX = scaleState
+                                scaleY = scaleState
+                                translationX = offsetXState
+                                translationY = offsetYState
                             }
                             .then(if (editMode) {
                                 Modifier.pointerInput(Unit) {
                                     detectTransformGestures { _, pan, zoom, _ ->
-                                        val newScale = (currentCard.imageScale * zoom).coerceIn(0.5f, 5.0f)
-                                        val newX = currentCard.imageOffsetX + pan.x
-                                        val newY = currentCard.imageOffsetY + pan.y
-                                        currentOnImageUpdate(newScale, newX, newY)
+                                        scaleState = (scaleState * zoom).coerceIn(0.5f, 5.0f)
+                                        offsetXState += pan.x
+                                        offsetYState += pan.y
+                                        currentOnImageUpdate(scaleState, offsetXState, offsetYState)
                                     }
                                 }
                             } else Modifier)

@@ -111,13 +111,15 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun updateCard(panelIndex: Int, cardIndex: Int, update: (CardModel) -> Unit) {
+    fun updateCard(panelIndex: Int, cardIndex: Int, saveAfter: Boolean = true, update: (CardModel) -> Unit) {
         if (panelIndex in _panels.indices) {
             val panel = _panels[panelIndex]
             if (cardIndex in panel.cards.indices) {
                 update(panel.cards[cardIndex])
                 _panels[panelIndex] = panel.copy()
-                savePanels()
+                if (saveAfter) {
+                    savePanels()
+                }
             }
         }
     }
