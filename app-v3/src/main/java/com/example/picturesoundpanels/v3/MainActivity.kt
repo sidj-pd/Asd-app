@@ -91,6 +91,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
     val selectedIndex by viewModel.selectedPanelIndex
     val editMode by viewModel.editMode
     val activePlaybackIndex by viewModel.activePlaybackCardIndex
+    val isDark by viewModel.darkMode
 
     var showPanelDialog by remember { mutableStateOf<Int?>(null) }
     var showCardDialog by remember { mutableStateOf<Int?>(null) }
@@ -204,7 +205,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .weight(0.75f)
                 .padding(12.dp) // Reduced outer padding from 24.dp to 12.dp
                 .clip(RoundedCornerShape(24.dp)) // Adjusted corner radius to match
-                .background(if (isSystemInDarkTheme()) Color(0xFF252525) else Color(0xFFE5DFD5)) // Soothing charcoal in dark mode vs warm sand
+                .background(if (isDark) Color(0xFF252525) else Color(0xFFE5DFD5)) // Soothing charcoal in dark mode vs warm sand
                 .padding(12.dp) // Reduced inner padding from 24.dp to 12.dp
         ) {
             val currentPanel = panels.getOrNull(selectedIndex)
@@ -226,7 +227,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 ) {
                     if (editMode) {
                         Text(
-                            text = "Dark Mode",
+                            text = "Dark mode",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onBackground
                         )
@@ -264,6 +265,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 0,
                                 isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 0,
+                                isDark = isDark,
                                 onClick = {
                                     if (editMode) showCardDialog = 0
                                     else viewModel.playCardAudio(0)
@@ -283,6 +285,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 1,
                                 isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 1,
+                                isDark = isDark,
                                 onClick = {
                                     if (editMode) showCardDialog = 1
                                     else viewModel.playCardAudio(1)
@@ -307,6 +310,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 2,
                                 isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 2,
+                                isDark = isDark,
                                 onClick = {
                                     if (editMode) showCardDialog = 2
                                     else viewModel.playCardAudio(2)
@@ -326,6 +330,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                                 editMode = editMode,
                                 isActive = activePlaybackIndex == 3,
                                 isDimmed = activePlaybackIndex != -1 && activePlaybackIndex != 3,
+                                isDark = isDark,
                                 onClick = {
                                     if (editMode) showCardDialog = 3
                                     else viewModel.playCardAudio(3)
@@ -424,6 +429,7 @@ fun CardItem(
     editMode: Boolean, 
     isActive: Boolean, 
     isDimmed: Boolean,
+    isDark: Boolean,
     onClick: () -> Unit,
     onImageUpdate: (Float, Float, Float) -> Unit
 ) {
@@ -441,7 +447,6 @@ fun CardItem(
         label = "cardAlpha"
     )
 
-    val isDark = isSystemInDarkTheme()
     val activeBgColor = if (isDark) Color(0xFF332F1A) else Color(0xFFFFF9E6)
     val inactiveBgColor = MaterialTheme.colorScheme.surface
 
