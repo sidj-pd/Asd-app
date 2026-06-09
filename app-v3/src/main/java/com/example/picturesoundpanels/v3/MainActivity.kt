@@ -2,9 +2,11 @@ package com.example.picturesoundpanels.v3
 
 import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
@@ -14,8 +16,6 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.gestures.rememberTransformableState
-import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -27,7 +27,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -37,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.picturesoundpanels.v3.models.Card
@@ -222,9 +221,6 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                     it.resetImagePosition()
                 }
             },
-            onRecord = {
-                // Recording is handled via ViewModel
-            },
             viewModel = viewModel,
             cardIndex = cardIndex
         )
@@ -400,7 +396,6 @@ fun CardEditorDialog(
     onDismiss: () -> Unit, 
     onSave: (String) -> Unit, 
     onImagePick: (Uri) -> Unit,
-    onRecord: () -> Unit,
     viewModel: PanelViewModel,
     cardIndex: Int
 ) {
@@ -411,11 +406,19 @@ fun CardEditorDialog(
         uri?.let { onImagePick(it) }
     }
 
-    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
-        if (isGranted) { /* Handle start recording */ }
-    }
-
     var isRecording by remember { mutableStateOf(false) }
+    
+    val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+        if (isGranted) {
+            val path = viewModel.startRecording(cardIndex)
+            if (path != null) {
+                isRecording = true
+                viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.audioPath = path }
+            }
+        } else {
+            Toast.makeText(context, "Microphone permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -424,7 +427,13 @@ fun CardEditorDialog(
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 TextField(value = label, onValueChange = { label = it }, label = { Text("Label") }, modifier = Modifier.fillMaxWidth())
                 
-                Button(onClick = { imageLauncher.launch(arrayOf("image/*")) }, modifier = Modifier.fillMaxWidth()) {
+                Button(onClick = { 
+                    try {
+                        imageLauncher.launch(arrayOf("image/*")) 
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Could not open image picker", Toast.LENGTH_SHORT).show()
+                    }
+                }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (card.hasImage()) "Change Picture" else "Add Picture")
                 }
 
@@ -446,10 +455,14 @@ fun CardEditorDialog(
                     Button(
                         onClick = {
                             if (!isRecording) {
-                                val path = viewModel.startRecording(cardIndex)
-                                if (path != null) {
-                                    isRecording = true
-                                    viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.audioPath = path }
+                                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+                                    val path = viewModel.startRecording(cardIndex)
+                                    if (path != null) {
+                                        isRecording = true
+                                        viewModel.updateCard(viewModel.selectedPanelIndex.value, cardIndex) { it.audioPath = path }
+                                    }
+                                } else {
+                                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                                 }
                             } else {
                                 viewModel.stopRecording(true)

@@ -38,6 +38,7 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
     private var player: MediaPlayer? = null
     private var recorder: MediaRecorder? = null
     private val playbackHandler = Handler(Looper.getMainLooper())
+    private val CHILD_PLAYBACK_FALLBACK_MS = 10000L
 
     init {
         loadPanels()
@@ -118,7 +119,9 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
             val panel = _panels[panelIndex]
             if (cardIndex in panel.cards.indices) {
                 update(panel.cards[cardIndex])
-                _panels[panelIndex] = panel.copy()
+                // Create a deep copy to ensure state update triggers recomposition
+                val updatedCards = panel.cards.map { it.copy() }.toMutableList()
+                _panels[panelIndex] = panel.copy(cards = updatedCards)
                 savePanels()
             }
         }
@@ -134,6 +137,14 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         playAudio(card.audioPath) {
             _activePlaybackCardIndex.value = -1
         }
+
+        // Fallback timer for child safety
+        playbackHandler.postDelayed({
+            if (_activePlaybackCardIndex.value == cardIndex) {
+                stopPlayback()
+                _activePlaybackCardIndex.value = -1
+            }
+        }, CHILD_PLAYBACK_FALLBACK_MS)
     }
 
     private fun playAudio(path: String, onComplete: () -> Unit) {
