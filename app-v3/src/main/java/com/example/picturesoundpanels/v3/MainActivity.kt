@@ -312,10 +312,16 @@ fun CardItem(
                 contentAlignment = Alignment.Center
             ) {
                 if (card.hasImage()) {
+                    val context = LocalContext.current
                     AsyncImage(
-                        model = card.imageUri,
+                        model = Uri.parse(card.imageUri),
                         contentDescription = null,
                         contentScale = ContentScale.FillBounds,
+                        onError = { state ->
+                            val error = state.result.throwable
+                            Toast.makeText(context, "Image error: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+                            error.printStackTrace()
+                        },
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
