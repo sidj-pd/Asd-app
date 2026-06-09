@@ -21,6 +21,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -393,7 +394,7 @@ fun CardItem(
                     AsyncImage(
                         model = Uri.parse(card.imageUri),
                         contentDescription = null,
-                        contentScale = ContentScale.FillBounds,
+                        contentScale = ContentScale.Fit,
                         onError = { state ->
                             val error = state.result.throwable
                             Toast.makeText(context, "Image error: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
@@ -409,9 +410,11 @@ fun CardItem(
                             }
                             .then(if (editMode) {
                                 Modifier.pointerInput(Unit) {
-                                    detectDragGestures { change, dragAmount ->
-                                        change.consume()
-                                        onImageUpdate(card.imageScale, card.imageOffsetX + dragAmount.x, card.imageOffsetY + dragAmount.y)
+                                    detectTransformGestures { _, pan, zoom, _ ->
+                                        val newScale = (card.imageScale * zoom).coerceIn(0.5f, 5.0f)
+                                        val newX = card.imageOffsetX + pan.x
+                                        val newY = card.imageOffsetY + pan.y
+                                        onImageUpdate(newScale, newX, newY)
                                     }
                                 }
                             } else Modifier)
