@@ -62,7 +62,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
     val editMode by viewModel.editMode
     val activePlaybackIndex by viewModel.activePlaybackCardIndex
 
-    var showPanelDialog by remember { mutableStateOf<Int?>(null) } // -1 for add, index for edit
+    var showPanelDialog by remember { mutableStateOf<Int?>(null) }
     var showCardDialog by remember { mutableStateOf<Int?>(null) }
 
     Row(
@@ -94,8 +94,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                         icon = panel.icon,
                         name = panel.name,
                         isSelected = index == selectedIndex,
-                        onClick = { viewModel.selectPanel(index) },
-                        onLongClick = { if (editMode) showPanelDialog = index }
+                        onClick = { viewModel.selectPanel(index) }
                     )
                 }
             }
@@ -207,33 +206,34 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
     }
 
     showCardDialog?.let { cardIndex ->
-        val card = panels[selectedIndex].cards[cardIndex]
-        CardEditorDialog(
-            card = card,
-            onDismiss = { showCardDialog = null },
-            onSave = { label ->
-                viewModel.updateCard(selectedIndex, cardIndex) { it.label = label }
-                showCardDialog = null
-            },
-            onImagePick = { uri ->
-                viewModel.updateCard(selectedIndex, cardIndex) { 
-                    it.imageUri = uri.toString()
-                    it.resetImagePosition()
-                }
-            },
-            viewModel = viewModel,
-            cardIndex = cardIndex
-        )
+        val currentPanel = panels.getOrNull(selectedIndex)
+        currentPanel?.let { panel ->
+            val card = panel.cards[cardIndex]
+            CardEditorDialog(
+                card = card,
+                onDismiss = { showCardDialog = null },
+                onSave = { label ->
+                    viewModel.updateCard(selectedIndex, cardIndex) { it.label = label }
+                    showCardDialog = null
+                },
+                onImagePick = { uri ->
+                    viewModel.updateCard(selectedIndex, cardIndex) { 
+                        it.imageUri = uri.toString()
+                        it.resetImagePosition()
+                    }
+                },
+                viewModel = viewModel,
+                cardIndex = cardIndex
+            )
+        }
     }
 }
 
 @Composable
-fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+fun PanelItem(icon: String, name: String, isSelected: Boolean, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().pointerInput(Unit) {
-            detectDragGestures(onDragStart = { onLongClick() }) { _, _ -> }
-        },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent,
         tonalElevation = if (isSelected) 4.dp else 0.dp
@@ -282,14 +282,14 @@ fun CardItem(
     )
 
     ElevatedCard(
-        onClick = onClick,
         modifier = Modifier
             .fillMaxSize()
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
                 this.alpha = alpha
-            },
+            }
+            .clickable { onClick() },
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.elevatedCardColors(
             containerColor = Color(0xFFFFFDF9)
