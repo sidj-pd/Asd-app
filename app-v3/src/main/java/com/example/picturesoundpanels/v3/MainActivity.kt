@@ -102,7 +102,7 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             Text(
-                text = "Panels",
+                text = "Category",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
@@ -112,12 +112,51 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 itemsIndexed(panels) { index, panel ->
-                    PanelItem(
-                        icon = panel.icon,
-                        name = panel.name,
-                        isSelected = index == selectedIndex,
-                        onClick = { viewModel.selectPanel(index) }
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PanelItem(
+                                icon = panel.icon,
+                                name = panel.name,
+                                isSelected = index == selectedIndex,
+                                onClick = { viewModel.selectPanel(index) }
+                            )
+                        }
+                        if (editMode) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                IconButton(
+                                    onClick = { viewModel.movePanelUp(index) },
+                                    enabled = index > 0,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Text(
+                                        text = "▲",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (index > 0) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f)
+                                    )
+                                }
+                                IconButton(
+                                    onClick = { viewModel.movePanelDown(index) },
+                                    enabled = index < panels.size - 1,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Text(
+                                        text = "▼",
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = if (index < panels.size - 1) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f)
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
@@ -498,11 +537,11 @@ fun PanelEditorDialog(initialIcon: String, initialName: String, onDismiss: () ->
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Panel Editor") },
+        title = { Text("Category Editor") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 TextField(value = icon, onValueChange = { icon = it }, label = { Text("Icon (e.g. 🍎)") })
-                TextField(value = name, onValueChange = { name = it }, label = { Text("Panel Name") })
+                TextField(value = name, onValueChange = { name = it }, label = { Text("Category Name") })
             }
         },
         confirmButton = { Button(onClick = { onSave(icon, name) }) { Text("Save") } },

@@ -67,10 +67,11 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun addDefaultPanels() {
         _panels.clear()
-        _panels.add(PanelModel("🍎", "Fruits"))
-        _panels.add(PanelModel("🐶", "Animals"))
         _panels.add(PanelModel("👨", "Family"))
         _panels.add(PanelModel("😊", "Feelings"))
+        _panels.add(PanelModel("🍎", "Fruits"))
+        _panels.add(PanelModel("🐶", "Animals"))
+        _panels.add(PanelModel("🚗", "Transport"))
         savePanels()
     }
 
@@ -191,6 +192,32 @@ class PanelViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: Exception) {}
         recorder?.release()
         recorder = null
+    }
+
+    fun movePanelUp(index: Int) {
+        if (index > 0 && index in _panels.indices) {
+            val panel = _panels.removeAt(index)
+            _panels.add(index - 1, panel)
+            if (_selectedPanelIndex.value == index) {
+                _selectedPanelIndex.value = index - 1
+            } else if (_selectedPanelIndex.value == index - 1) {
+                _selectedPanelIndex.value = index
+            }
+            savePanels()
+        }
+    }
+
+    fun movePanelDown(index: Int) {
+        if (index < _panels.size - 1 && index in _panels.indices) {
+            val panel = _panels.removeAt(index)
+            _panels.add(index + 1, panel)
+            if (_selectedPanelIndex.value == index) {
+                _selectedPanelIndex.value = index + 1
+            } else if (_selectedPanelIndex.value == index + 1) {
+                _selectedPanelIndex.value = index
+            }
+            savePanels()
+        }
     }
 
     override fun onCleared() {
