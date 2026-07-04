@@ -390,10 +390,36 @@ fun MainScreen(viewModel: PanelViewModel = viewModel()) {
                     showCardDialog = null
                 },
                 onImagePick = { uri ->
-                    val mediaStoreUri = getMediaStoreUri(context, uri)
-                    viewModel.updateCard(selectedIndex, cardIndex) { 
-                        it.imageUri = mediaStoreUri.toString()
-                        it.resetImagePosition()
+                    try {
+                        val inputStream = context.contentResolver.openInputStream(uri)
+                        if (inputStream != null) {
+                            val oldUriString = card.imageUri
+                            if (oldUriString.isNotEmpty() && oldUriString.startsWith("file:/")) {
+                                try {
+                                    val oldFile = File(Uri.parse(oldUriString).path ?: "")
+                                    if (oldFile.exists()) {
+                                        oldFile.delete()
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                }
+                            }
+                            val localFile = File(context.filesDir, "card_${selectedIndex}_${cardIndex}_${System.currentTimeMillis()}_image.jpg")
+                            inputStream.use { input ->
+                                localFile.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            viewModel.updateCard(selectedIndex, cardIndex) { 
+                                it.imageUri = Uri.fromFile(localFile).toString()
+                                it.resetImagePosition()
+                            }
+                        } else {
+                            Toast.makeText(context, "Could not open selected image", Toast.LENGTH_SHORT).show()
+                        }
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        Toast.makeText(context, "Error saving image: ${e.localizedMessage}", Toast.LENGTH_LONG).show()
                     }
                 },
                 viewModel = viewModel,
@@ -673,20 +699,6 @@ fun CardEditorDialog(
         uri?.let { onImagePick(it) }
     }
 
-    val storagePermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
-            try {
-                imageLauncher.launch(arrayOf("image/*"))
-            } catch (e: Exception) {
-                Toast.makeText(context, "Could not open image picker", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            Toast.makeText(context, "Storage permission required to select images", Toast.LENGTH_SHORT).show()
-        }
-    }
-
     var isRecording by remember { mutableStateOf(false) }
     
     val permissionLauncher = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
@@ -709,19 +721,10 @@ fun CardEditorDialog(
                 TextField(value = label, onValueChange = { label = it }, label = { Text("Label") }, modifier = Modifier.fillMaxWidth())
                 
                 Button(onClick = { 
-                    val permissionToRequest = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                        Manifest.permission.READ_MEDIA_IMAGES
-                    } else {
-                        Manifest.permission.READ_EXTERNAL_STORAGE
-                    }
-                    if (ContextCompat.checkSelfPermission(context, permissionToRequest) == PackageManager.PERMISSION_GRANTED) {
-                        try {
-                            imageLauncher.launch(arrayOf("image/*")) 
-                        } catch (e: Exception) {
-                            Toast.makeText(context, "Could not open image picker", Toast.LENGTH_SHORT).show()
-                        }
-                    } else {
-                        storagePermissionLauncher.launch(permissionToRequest)
+                    try {
+                        imageLauncher.launch(arrayOf("image/*")) 
+                    } catch (e: Exception) {
+                        Toast.makeText(context, "Could not open image picker", Toast.LENGTH_SHORT).show()
                     }
                 }, modifier = Modifier.fillMaxWidth()) {
                     Text(if (card.hasImage()) "Change Picture" else "Add Picture")
@@ -768,22 +771,4 @@ fun CardEditorDialog(
             }
         }
     )
-}
-
-fun getMediaStoreUri(context: Context, uri: Uri): Uri {
-    if (DocumentsContract.isDocumentUri(context, uri)) {
-        val docId = DocumentsContract.getDocumentId(uri)
-        if (docId.startsWith("image:")) {
-            val id = docId.split(":")[1]
-            try {
-                return ContentUris.withAppendedId(
-                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                    id.toLong()
-                )
-            } catch (e: NumberFormatException) {
-                e.printStackTrace()
-            }
-        }
-    }
-    return uri
 }
