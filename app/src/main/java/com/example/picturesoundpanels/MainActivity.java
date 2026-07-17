@@ -559,8 +559,7 @@ public class MainActivity extends Activity {
         if (requestCode == PICK_IMAGE_REQUEST && resultCode == RESULT_OK && data != null && data.getData() != null && pendingImageCardIndex >= 0) {
             Uri uri = data.getData();
             try {
-                final int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-                getContentResolver().takePersistableUriPermission(uri, flags & Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
             } catch (SecurityException | IllegalArgumentException ignored) {
             }
             Card selectedCard = panels.get(selectedPanelIndex).cards.get(pendingImageCardIndex);
