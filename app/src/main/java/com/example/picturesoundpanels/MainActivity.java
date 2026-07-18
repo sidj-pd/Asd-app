@@ -5,6 +5,7 @@ import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.KeyguardManager;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -48,6 +49,7 @@ import java.util.List;
 public class MainActivity extends Activity {
     private static final int PICK_IMAGE_REQUEST = 301;
     private static final int RECORD_AUDIO_PERMISSION_REQUEST = 302;
+    private static final int CONFIRM_DEVICE_CREDENTIAL_REQUEST = 303;
     private static final String PREFS_NAME = "picture_sound_panels";
     private static final String PANELS_KEY = "panels";
     private static final int MAX_CARDS = 4;
@@ -133,8 +135,12 @@ public class MainActivity extends Activity {
         editButton = new Button(this);
         editButton.setAllCaps(false);
         editButton.setOnClickListener(v -> {
-            editMode = !editMode;
-            renderAll();
+            if (editMode) {
+                editMode = false;
+                renderAll();
+            } else {
+                tryAuthentication();
+            }
         });
         header.addView(editButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -553,6 +559,20 @@ public class MainActivity extends Activity {
         }
     }
 
+    private void tryAuthentication() {
+        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (km != null && km.isDeviceSecure()) {
+            Intent intent = km.createConfirmDeviceCredentialIntent("Access Edit Mode", "Please verify your PIN, pattern, or password to access care-giver edit options.");
+            if (intent != null) {
+                startActivityForResult(intent, CONFIRM_DEVICE_CREDENTIAL_REQUEST);
+                return;
+            }
+        }
+        Toast.makeText(this, "Device is not secure. Edit Mode unlocked.", Toast.LENGTH_SHORT).show();
+        editMode = true;
+        renderAll();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -567,6 +587,13 @@ public class MainActivity extends Activity {
             selectedCard.resetImagePosition();
             pendingImageCardIndex = -1;
             renderAll();
+        } else if (requestCode == CONFIRM_DEVICE_CREDENTIAL_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                editMode = true;
+                renderAll();
+            } else {
+                Toast.makeText(this, "Authentication failed. Edit Mode remains locked.", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
