@@ -1,4 +1,4 @@
-package com.example.picturesoundpanels;
+package com.sidjpd.picturesoundpanels;
 
 import android.Manifest;
 import android.animation.AnimatorSet;
@@ -50,6 +50,7 @@ public class MainActivity extends Activity {
     private static final int PICK_IMAGE_REQUEST = 301;
     private static final int RECORD_AUDIO_PERMISSION_REQUEST = 302;
     private static final int CONFIRM_DEVICE_CREDENTIAL_REQUEST = 303;
+    private static final int CONFIRM_DONATION_AUTH_REQUEST = 304;
     private static final String PREFS_NAME = "picture_sound_panels";
     private static final String PANELS_KEY = "panels";
     private static final int MAX_CARDS = 4;
@@ -66,6 +67,7 @@ public class MainActivity extends Activity {
     private boolean editMode = false;
     private MediaRecorder recorder;
     private MediaPlayer player;
+    private BillingHelper billingHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +75,7 @@ public class MainActivity extends Activity {
         loadPanels();
         buildLayout();
         renderAll();
+        initBilling();
     }
 
     @Override
@@ -81,6 +84,28 @@ public class MainActivity extends Activity {
         stopPlayback();
         stopRecording(false);
         savePanels();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (billingHelper != null) {
+            billingHelper.destroy();
+        }
+    }
+
+    private void initBilling() {
+        billingHelper = new BillingHelper(this, new BillingHelper.DonationCallback() {
+            @Override
+            public void onDonationSuccess(String productId) {
+                Toast.makeText(MainActivity.this, "Thank you so much for your support! ❤️", Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onDonationError(String message) {
+                Toast.makeText(MainActivity.this, message, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void buildLayout() {
@@ -114,6 +139,12 @@ public class MainActivity extends Activity {
         addPanelButton.setAllCaps(false);
         addPanelButton.setOnClickListener(v -> showPanelEditor(-1));
         side.addView(addPanelButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        Button donateButton = new Button(this);
+        donateButton.setText("Donate ☕");
+        donateButton.setAllCaps(false);
+        donateButton.setOnClickListener(v -> handleDonateClick());
+        side.addView(donateButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
@@ -573,6 +604,41 @@ public class MainActivity extends Activity {
         renderAll();
     }
 
+    private void handleDonateClick() {
+        KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+        if (km != null && km.isDeviceSecure()) {
+            Intent intent = km.createConfirmDeviceCredentialIntent("Parent Verification", "Please verify to open the Donation Support dialog.");
+            if (intent != null) {
+                startActivityForResult(intent, CONFIRM_DONATION_AUTH_REQUEST);
+                return;
+            }
+        }
+        showDonationDialog();
+    }
+
+    private void showDonationDialog() {
+        String[] options = {
+            "☕ Small Support Tip ($1.99)",
+            "🍰 Medium Support Tip ($4.99)",
+            "🍔 Large Support Tip ($9.99)"
+        };
+        String[] productIds = {
+            "tip_small",
+            "tip_medium",
+            "tip_large"
+        };
+        new AlertDialog.Builder(this)
+                .setTitle("Support Asd-app")
+                .setMessage("Asd-app is free and has no ads. If you find it helpful, please consider supporting development with a tip!")
+                .setItems(options, (dialog, which) -> {
+                    if (billingHelper != null) {
+                        billingHelper.makeDonation(productIds[which]);
+                    }
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -593,6 +659,10 @@ public class MainActivity extends Activity {
                 renderAll();
             } else {
                 Toast.makeText(this, "Authentication failed. Edit Mode remains locked.", Toast.LENGTH_SHORT).show();
+            }
+        } else if (requestCode == CONFIRM_DONATION_AUTH_REQUEST) {
+            if (resultCode == RESULT_OK) {
+                showDonationDialog();
             }
         }
     }

@@ -3,14 +3,18 @@ plugins {
 }
 
 android {
-    namespace 'com.example.picturesoundpanels'
+    namespace 'com.sidjpd.picturesoundpanels'
     compileSdk 35
 
     defaultConfig {
-        applicationId 'com.example.picturesoundpanels'
+        applicationId 'com.sidjpd.picturesoundpanels'
         minSdk 24
         targetSdk 35
         versionCode 1
         versionName '1.0'
     }
+}
+
+dependencies {
+    implementation 'com.android.billingclient:billing:7.0.0'
 }
