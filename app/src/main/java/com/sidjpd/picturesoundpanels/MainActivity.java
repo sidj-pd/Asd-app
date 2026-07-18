@@ -628,8 +628,7 @@ public class MainActivity extends Activity {
             "tip_large"
         };
         new AlertDialog.Builder(this)
-                .setTitle("Support Asd-app")
-                .setMessage("Asd-app is free and has no ads. If you find it helpful, please consider supporting development with a tip!")
+                .setTitle("Support Picto Play - Select Tip Amount")
                 .setItems(options, (dialog, which) -> {
                     if (billingHelper != null) {
                         billingHelper.makeDonation(productIds[which]);
