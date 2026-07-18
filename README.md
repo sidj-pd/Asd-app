@@ -250,7 +250,7 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 Then open **Asd app** on the tablet, or launch it from ADB with:
 
 ```bash
-adb shell monkey -p com.example.picturesoundpanels 1
+adb shell monkey -p com.sidjpd.picturesoundpanels 1
 ```
 
 ## First-time app setup on the tablet
