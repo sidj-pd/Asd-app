@@ -190,7 +190,7 @@ public class MainActivity extends Activity {
         }
         selectedPanelIndex = Math.max(0, Math.min(selectedPanelIndex, panels.size() - 1));
         Panel selectedPanel = panels.get(selectedPanelIndex);
-        titleText.setText("Asd app  •  " + selectedPanel.icon + " " + selectedPanel.name);
+        titleText.setText("Picto Play  •  " + selectedPanel.icon + " " + selectedPanel.name);
         editButton.setText(editMode ? "Done" : "Edit");
         addPanelButton.setVisibility(editMode ? View.VISIBLE : View.GONE);
         renderPanelList();
