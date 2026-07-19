@@ -20,6 +20,7 @@ import android.media.MediaPlayer;
 import android.media.MediaRecorder;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.text.InputType;
 import android.text.TextUtils;
@@ -70,6 +71,9 @@ public class MainActivity extends Activity {
     private MediaRecorder recorder;
     private MediaPlayer player;
     private BillingHelper billingHelper;
+    private View activeCardView;
+    private final Handler handler = new Handler();
+    private Runnable unlockRunnable;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -370,29 +374,42 @@ public class MainActivity extends Activity {
         return cardLayout;
     }
     private void playCardAudioWithAnimation(View cardView, Card card) {
+        if (unlockRunnable != null) {
+            handler.removeCallbacks(unlockRunnable);
+        }
+
         popView(cardView, 1.16f, 150, 320);
+        activeCardView = cardView;
+        isAudioPlaying = true;
 
         // Dim other cards to highlight the active one
         for (int i = 0; i < cardGrid.getChildCount(); i++) {
             View child = cardGrid.getChildAt(i);
             if (child != cardView) {
-                child.animate()
-                     .alpha(0.4f)
-                     .setDuration(150)
-                     .withEndAction(() -> child.animate().alpha(1.0f).setDuration(320).start())
-                     .start();
+                child.animate().alpha(0.4f).setDuration(150).start();
             }
         }
 
         // Apply a bold red border highlight to the clicked card during animation
         GradientDrawable highlightBg = makeRoundedBackground(Color.WHITE, Color.rgb(198, 40, 40), 3);
-        GradientDrawable normalBg = makeRoundedBackground(Color.WHITE, Color.rgb(145, 155, 165), 1);
         cardView.setBackground(highlightBg);
-        cardView.postDelayed(() -> cardView.setBackground(normalBg), 470); // 150ms + 320ms = 470ms
+
+        long lockDuration = 5000; // Minimum 5 seconds lock
 
         if (card.hasAudio()) {
             playAudio(card.audioPath);
+            if (player != null) {
+                try {
+                    int duration = player.getDuration();
+                    if (duration > 0) {
+                        lockDuration = Math.max(5000, duration);
+                    }
+                } catch (Exception ignored) {}
+            }
         }
+
+        unlockRunnable = () -> stopPlayback();
+        handler.postDelayed(unlockRunnable, lockDuration);
     }
     private void popView(View view, float peakScale, long growDuration, long settleDuration) {
         view.animate().cancel();
@@ -645,7 +662,12 @@ public class MainActivity extends Activity {
         try {
             player = new MediaPlayer();
             player.setDataSource(path);
-            player.setOnCompletionListener(mp -> stopPlayback());
+            player.setOnCompletionListener(mp -> {
+                if (player != null) {
+                    player.release();
+                    player = null;
+                }
+            });
             player.prepare();
             player.start();
             isAudioPlaying = true;
@@ -656,11 +678,30 @@ public class MainActivity extends Activity {
     }
 
     private void stopPlayback() {
+        if (unlockRunnable != null) {
+            handler.removeCallbacks(unlockRunnable);
+            unlockRunnable = null;
+        }
         if (player != null) {
             player.release();
             player = null;
         }
         isAudioPlaying = false;
+
+        // Restore active card border to normal
+        if (activeCardView != null) {
+            GradientDrawable normalBg = makeRoundedBackground(Color.WHITE, Color.rgb(145, 155, 165), 1);
+            activeCardView.setBackground(normalBg);
+            activeCardView = null;
+        }
+
+        // Fade all other cards back to 1.0f
+        if (cardGrid != null) {
+            for (int i = 0; i < cardGrid.getChildCount(); i++) {
+                View child = cardGrid.getChildAt(i);
+                child.animate().alpha(1.0f).setDuration(320).start();
+            }
+        }
     }
 
     private void tryAuthentication() {
