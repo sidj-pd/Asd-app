@@ -5,3 +5,6 @@ local.properties
 *.iml
 .idea/
 .DS_Store
+
+# Release signing keystore — NEVER commit this
+app/keystore/
