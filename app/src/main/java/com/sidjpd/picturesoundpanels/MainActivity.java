@@ -66,6 +66,7 @@ public class MainActivity extends Activity {
     private int pendingImageCardIndex = -1;
     private int pendingRecordCardIndex = -1;
     private boolean editMode = false;
+    private boolean isAudioPlaying = false;
     private MediaRecorder recorder;
     private MediaPlayer player;
     private BillingHelper billingHelper;
@@ -255,7 +256,7 @@ public class MainActivity extends Activity {
         cardLayout.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
-            } else {
+            } else if (!isAudioPlaying) {
                 playCardAudioWithAnimation(cardLayout, card);
             }
         });
@@ -268,7 +269,7 @@ public class MainActivity extends Activity {
             AdjustableImageView image = new AdjustableImageView(this, card);
             image.setImageURI(Uri.parse(card.imageUri));
             image.setOnClickListener(v -> {
-                if (!editMode) {
+                if (!editMode && !isAudioPlaying) {
                     playCardAudioWithAnimation(cardLayout, card);
                 }
             });
@@ -314,7 +315,7 @@ public class MainActivity extends Activity {
         playButton.setOnClickListener(v -> {
             if (editMode) {
                 showCardEditor(cardIndex);
-            } else if (card.hasAudio()) {
+            } else if (card.hasAudio() && !isAudioPlaying) {
                 playCardAudioWithAnimation(cardLayout, card);
             }
         });
@@ -633,6 +634,7 @@ public class MainActivity extends Activity {
             player.setOnCompletionListener(mp -> stopPlayback());
             player.prepare();
             player.start();
+            isAudioPlaying = true;
         } catch (IOException | RuntimeException ex) {
             stopPlayback();
             Toast.makeText(this, "Could not play audio.", Toast.LENGTH_SHORT).show();
@@ -644,6 +646,7 @@ public class MainActivity extends Activity {
             player.release();
             player = null;
         }
+        isAudioPlaying = false;
     }
 
     private void tryAuthentication() {
