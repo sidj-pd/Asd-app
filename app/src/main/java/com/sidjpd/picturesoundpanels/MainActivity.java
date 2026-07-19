@@ -318,6 +318,11 @@ public class MainActivity extends Activity {
                 playAudio(card.audioPath);
             }
         });
+        if (isPhone) {
+            playButton.setPadding(0, 0, 0, 0);
+            playButton.setMinWidth(0);
+            playButton.setMinHeight(0);
+        }
 
         if (isPhone) {
             LinearLayout row = new LinearLayout(this);
@@ -330,7 +335,7 @@ public class MainActivity extends Activity {
             row.addView(label, lp);
 
             playButton.setTextSize(11);
-            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(68), dp(28));
+            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(76), dp(30));
             bp.setMargins(dp(2), 0, dp(2), 0);
             row.addView(playButton, bp);
 
