@@ -151,16 +151,16 @@ public class MainActivity extends Activity {
         });
         side.addView(addPanelButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
-        Button donateButton = new Button(this);
-        donateButton.setText("Donate ☕");
-        donateButton.setAllCaps(false);
-        donateButton.setTextSize(isTablet() ? 16 : 13);
-        donateButton.setOnClickListener(v -> {
+        Button aboutButton = new Button(this);
+        aboutButton.setText("About ℹ️");
+        aboutButton.setAllCaps(false);
+        aboutButton.setTextSize(isTablet() ? 16 : 13);
+        aboutButton.setOnClickListener(v -> {
             if (!isAudioPlaying) {
-                handleDonateClick();
+                showAboutDialog();
             }
         });
-        side.addView(donateButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        side.addView(aboutButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         LinearLayout main = new LinearLayout(this);
         main.setOrientation(LinearLayout.VERTICAL);
@@ -721,16 +721,112 @@ public class MainActivity extends Activity {
         renderAll();
     }
 
+    private void showAboutDialog() {
+        ScrollView scroll = new ScrollView(this);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        int pad = dp(20);
+        content.setPadding(pad, dp(8), pad, dp(8));
+
+        TextView desc = new TextView(this);
+        desc.setTextSize(14);
+        desc.setLineSpacing(dp(3), 1f);
+        desc.setTextColor(Color.rgb(25, 35, 50));
+        desc.setText(
+            "\uD83C\uDFAE About Picto Play\n\n" +
+            "Picto Play is a visual communication and learning aid designed to support children " +
+            "with ASD (Autism Spectrum Disorder) and ADHD.\n\n" +
+            "Children with ASD and ADHD often benefit from picture-based learning. " +
+            "Picto Play pairs images with recorded words or sounds, helping children " +
+            "build word associations, expand vocabulary, and develop concentration " +
+            "through calm, focused interaction.\n\n" +
+            "✨ Key Features\n" +
+            "  • Picture Panels — Organise cards into named panels (e.g. Food, Feelings, Actions)\n" +
+            "  • Custom Flashcards — Add your own photos and record spoken words for each card\n" +
+            "  • Tap-to-Play — Children tap a card to hear the recorded word and see the image\n" +
+            "  • Focus Mode — Other cards dim and are disabled while audio plays, " +
+            "keeping the child's attention on the active card\n" +
+            "  • Parent Lock — Edit mode is protected behind your device screen lock, " +
+            "so only caregivers can modify the content\n" +
+            "  • Distraction-Free — No ads, no notifications, no internet required\n\n" +
+            "Picto Play is built with love for families and caregivers who want a simple, " +
+            "calm, and effective learning tool for their child."
+        );
+        content.addView(desc);
+
+        View divider = new View(this);
+        divider.setBackgroundColor(Color.rgb(210, 220, 230));
+        LinearLayout.LayoutParams divParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(1));
+        divParams.setMargins(0, dp(20), 0, dp(16));
+        content.addView(divider, divParams);
+
+        TextView supportLabel = new TextView(this);
+        supportLabel.setText("☕  Support Development");
+        supportLabel.setTextSize(15);
+        supportLabel.setTypeface(Typeface.DEFAULT_BOLD);
+        supportLabel.setTextColor(Color.rgb(25, 35, 50));
+        content.addView(supportLabel);
+
+        TextView supportDesc = new TextView(this);
+        supportDesc.setText(
+            "Picto Play is free and always will be. If it has helped your child, " +
+            "a small tip keeps development going and new features coming.");
+        supportDesc.setTextSize(13);
+        supportDesc.setTextColor(Color.rgb(80, 95, 110));
+        supportDesc.setLineSpacing(dp(2), 1f);
+        LinearLayout.LayoutParams sdParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        sdParams.setMargins(0, dp(6), 0, dp(14));
+        content.addView(supportDesc, sdParams);
+
+        Button donateBtn = new Button(this);
+        donateBtn.setText("\uD83D\uDCB3 Donate — Parent Verified");
+        donateBtn.setAllCaps(false);
+        donateBtn.setTextSize(14);
+        donateBtn.setTypeface(Typeface.DEFAULT_BOLD);
+        donateBtn.setTextColor(Color.WHITE);
+        donateBtn.setBackground(makeRoundedBackground(Color.rgb(46, 125, 50), Color.rgb(27, 94, 32), 1));
+        content.addView(donateBtn, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, dp(48)));
+
+        scroll.addView(content);
+
+        AlertDialog aboutDialog = new AlertDialog.Builder(this)
+                .setView(scroll)
+                .setNegativeButton("Close", null)
+                .create();
+
+        donateBtn.setOnClickListener(v -> {
+            aboutDialog.dismiss();
+            handleDonateClick();
+        });
+
+        aboutDialog.show();
+    }
+
     private void handleDonateClick() {
         KeyguardManager km = (KeyguardManager) getSystemService(KEYGUARD_SERVICE);
-        if (km != null && km.isDeviceSecure()) {
-            Intent intent = km.createConfirmDeviceCredentialIntent("Parent Verification", "Please verify to open the Donation Support dialog.");
-            if (intent != null) {
-                startActivityForResult(intent, CONFIRM_DONATION_AUTH_REQUEST);
-                return;
-            }
+        if (km == null || !km.isDeviceSecure()) {
+            new AlertDialog.Builder(this)
+                    .setTitle("Device Lock Required")
+                    .setMessage(
+                        "To protect donations from accidental purchases by children, " +
+                        "please set up a screen lock (PIN, pattern, or password) on your device first.\n\n" +
+                        "Go to: Settings → Security → Screen Lock")
+                    .setPositiveButton("Open Settings", (d, w) -> {
+                        startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+            return;
         }
-        showDonationDialog();
+        Intent intent = km.createConfirmDeviceCredentialIntent(
+                "Parent Verification",
+                "Please verify your screen lock to open the Donation Support screen.");
+        if (intent != null) {
+            startActivityForResult(intent, CONFIRM_DONATION_AUTH_REQUEST);
+        }
     }
 
     private void showDonationDialog() {
