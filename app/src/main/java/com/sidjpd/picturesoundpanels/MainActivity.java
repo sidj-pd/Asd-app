@@ -140,14 +140,22 @@ public class MainActivity extends Activity {
         addPanelButton.setText("+ Panel");
         addPanelButton.setAllCaps(false);
         addPanelButton.setTextSize(isTablet() ? 16 : 13);
-        addPanelButton.setOnClickListener(v -> showPanelEditor(-1));
+        addPanelButton.setOnClickListener(v -> {
+            if (!isAudioPlaying) {
+                showPanelEditor(-1);
+            }
+        });
         side.addView(addPanelButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         Button donateButton = new Button(this);
         donateButton.setText("Donate ☕");
         donateButton.setAllCaps(false);
         donateButton.setTextSize(isTablet() ? 16 : 13);
-        donateButton.setOnClickListener(v -> handleDonateClick());
+        donateButton.setOnClickListener(v -> {
+            if (!isAudioPlaying) {
+                handleDonateClick();
+            }
+        });
         side.addView(donateButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         LinearLayout main = new LinearLayout(this);
@@ -171,11 +179,13 @@ public class MainActivity extends Activity {
         editButton.setAllCaps(false);
         editButton.setTextSize(isTablet() ? 16 : 13);
         editButton.setOnClickListener(v -> {
-            if (editMode) {
-                editMode = false;
-                renderAll();
-            } else {
-                tryAuthentication();
+            if (!isAudioPlaying) {
+                if (editMode) {
+                    editMode = false;
+                    renderAll();
+                } else {
+                    tryAuthentication();
+                }
             }
         });
         header.addView(editButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -216,11 +226,15 @@ public class MainActivity extends Activity {
             button.setBackground(makeRoundedBackground(i == selectedPanelIndex ? Color.rgb(198, 225, 255) : Color.WHITE, Color.rgb(150, 167, 185), 2));
             final int index = i;
             button.setOnClickListener(v -> {
-                selectedPanelIndex = index;
-                renderAll();
+                if (!isAudioPlaying) {
+                    selectedPanelIndex = index;
+                    renderAll();
+                }
             });
             button.setOnLongClickListener(v -> {
-                showPanelEditor(index);
+                if (!isAudioPlaying) {
+                    showPanelEditor(index);
+                }
                 return true;
             });
             LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
