@@ -268,8 +268,8 @@ public class MainActivity extends Activity {
             AdjustableImageView image = new AdjustableImageView(this, card);
             image.setImageURI(Uri.parse(card.imageUri));
             image.setOnClickListener(v -> {
-                if (!editMode && card.hasAudio()) {
-                    playAudio(card.audioPath);
+                if (!editMode) {
+                    playCardAudioWithAnimation(cardLayout, card);
                 }
             });
             imageFrame.addView(image, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -315,7 +315,7 @@ public class MainActivity extends Activity {
             if (editMode) {
                 showCardEditor(cardIndex);
             } else if (card.hasAudio()) {
-                playAudio(card.audioPath);
+                playCardAudioWithAnimation(cardLayout, card);
             }
         });
         if (isPhone) {
