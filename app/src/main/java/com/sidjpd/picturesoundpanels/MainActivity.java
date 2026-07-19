@@ -354,14 +354,31 @@ public class MainActivity extends Activity {
 
         return cardLayout;
     }
-
     private void playCardAudioWithAnimation(View cardView, Card card) {
         popView(cardView, 1.16f, 150, 320);
+
+        // Dim other cards to highlight the active one
+        for (int i = 0; i < cardGrid.getChildCount(); i++) {
+            View child = cardGrid.getChildAt(i);
+            if (child != cardView) {
+                child.animate()
+                     .alpha(0.4f)
+                     .setDuration(150)
+                     .withEndAction(() -> child.animate().alpha(1.0f).setDuration(320).start())
+                     .start();
+            }
+        }
+
+        // Apply a bold red border highlight to the clicked card during animation
+        GradientDrawable highlightBg = makeRoundedBackground(Color.WHITE, Color.rgb(198, 40, 40), 3);
+        GradientDrawable normalBg = makeRoundedBackground(Color.WHITE, Color.rgb(145, 155, 165), 1);
+        cardView.setBackground(highlightBg);
+        cardView.postDelayed(() -> cardView.setBackground(normalBg), 470); // 150ms + 320ms = 470ms
+
         if (card.hasAudio()) {
             playAudio(card.audioPath);
         }
     }
-
     private void popView(View view, float peakScale, long growDuration, long settleDuration) {
         view.animate().cancel();
         view.bringToFront();
