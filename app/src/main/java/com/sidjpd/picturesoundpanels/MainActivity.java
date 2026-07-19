@@ -10,6 +10,7 @@ import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.PointF;
@@ -137,12 +138,14 @@ public class MainActivity extends Activity {
         addPanelButton = new Button(this);
         addPanelButton.setText("+ Panel");
         addPanelButton.setAllCaps(false);
+        addPanelButton.setTextSize(isTablet() ? 16 : 13);
         addPanelButton.setOnClickListener(v -> showPanelEditor(-1));
         side.addView(addPanelButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         Button donateButton = new Button(this);
         donateButton.setText("Donate ☕");
         donateButton.setAllCaps(false);
+        donateButton.setTextSize(isTablet() ? 16 : 13);
         donateButton.setOnClickListener(v -> handleDonateClick());
         side.addView(donateButton, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -158,13 +161,14 @@ public class MainActivity extends Activity {
         main.addView(header, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         titleText = new TextView(this);
-        titleText.setTextSize(24);
+        titleText.setTextSize(isTablet() ? 24 : 18);
         titleText.setTypeface(Typeface.DEFAULT_BOLD);
         titleText.setTextColor(Color.rgb(24, 36, 52));
         header.addView(titleText, new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1));
 
         editButton = new Button(this);
         editButton.setAllCaps(false);
+        editButton.setTextSize(isTablet() ? 16 : 13);
         editButton.setOnClickListener(v -> {
             if (editMode) {
                 editMode = false;
@@ -204,7 +208,7 @@ public class MainActivity extends Activity {
             Panel panel = panels.get(i);
             Button button = new Button(this);
             button.setText(panel.icon + "  " + panel.name);
-            button.setTextSize(16);
+            button.setTextSize(isTablet() ? 16 : 12);
             button.setAllCaps(false);
             button.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
             button.setPadding(dp(8), dp(8), dp(8), dp(8));
@@ -237,7 +241,12 @@ public class MainActivity extends Activity {
         }
     }
 
+    private boolean isTablet() {
+        return getResources().getConfiguration().smallestScreenWidthDp >= 600;
+    }
+
     private View createCardView(Card card, int cardIndex) {
+        boolean isPhone = !isTablet();
         LinearLayout cardLayout = new LinearLayout(this);
         cardLayout.setOrientation(LinearLayout.VERTICAL);
         cardLayout.setGravity(Gravity.CENTER);
@@ -267,10 +276,10 @@ public class MainActivity extends Activity {
             if (editMode) {
                 TextView hint = new TextView(this);
                 hint.setText("Drag / pinch");
-                hint.setTextSize(12);
+                hint.setTextSize(isPhone ? 9 : 12);
                 hint.setTextColor(Color.WHITE);
                 hint.setGravity(Gravity.CENTER);
-                hint.setPadding(dp(6), dp(3), dp(6), dp(3));
+                hint.setPadding(dp(4), dp(2), dp(4), dp(2));
                 hint.setBackground(makeRoundedBackground(Color.argb(160, 0, 0, 0), Color.TRANSPARENT, 0));
                 FrameLayout.LayoutParams hintParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP | Gravity.END);
                 hintParams.setMargins(0, dp(4), dp(4), 0);
@@ -280,27 +289,25 @@ public class MainActivity extends Activity {
             TextView placeholder = new TextView(this);
             placeholder.setGravity(Gravity.CENTER);
             placeholder.setText(editMode ? "+\nAdd picture" : "Empty");
-            placeholder.setTextSize(20);
+            placeholder.setTextSize(isPhone ? 14 : 20);
             placeholder.setTextColor(Color.rgb(115, 130, 145));
             imageFrame.addView(placeholder, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         }
 
         TextView label = new TextView(this);
         label.setText(card.label.isEmpty() ? (editMode ? "Tap to edit" : "") : card.label);
-        label.setTextSize(18);
         label.setTypeface(Typeface.DEFAULT_BOLD);
         label.setTextColor(Color.rgb(20, 30, 40));
-        label.setGravity(Gravity.CENTER);
-        label.setSingleLine(false);
-        LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-        labelParams.setMargins(0, dp(4), 0, dp(3));
-        cardLayout.addView(label, labelParams);
+        label.setGravity(isPhone ? (Gravity.START | Gravity.CENTER_VERTICAL) : Gravity.CENTER);
+        label.setSingleLine(isPhone);
+        if (isPhone) {
+            label.setEllipsize(TextUtils.TruncateAt.END);
+        }
 
         Button playButton = new Button(this);
-        playButton.setText(editMode ? (card.hasAudio() ? "Play / Rec" : "Record") : "Play");
+        playButton.setText(editMode ? (card.hasAudio() ? "Play/Rec" : "Record") : "Play");
         playButton.setAllCaps(false);
         playButton.setTextColor(Color.WHITE);
-        playButton.setTextSize(14);
         playButton.setTypeface(Typeface.DEFAULT_BOLD);
         playButton.setBackground(makeRoundedBackground(Color.rgb(198, 40, 40), Color.rgb(130, 20, 20), 1));
         playButton.setEnabled(editMode || card.hasAudio());
@@ -311,7 +318,34 @@ public class MainActivity extends Activity {
                 playAudio(card.audioPath);
             }
         });
-        cardLayout.addView(playButton, new LinearLayout.LayoutParams(dp(92), dp(40)));
+
+        if (isPhone) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.HORIZONTAL);
+            row.setGravity(Gravity.CENTER_VERTICAL);
+
+            label.setTextSize(13);
+            LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, ViewGroup.LayoutParams.WRAP_CONTENT, 1f);
+            lp.setMargins(dp(2), 0, dp(2), 0);
+            row.addView(label, lp);
+
+            playButton.setTextSize(11);
+            LinearLayout.LayoutParams bp = new LinearLayout.LayoutParams(dp(68), dp(28));
+            bp.setMargins(dp(2), 0, dp(2), 0);
+            row.addView(playButton, bp);
+
+            LinearLayout.LayoutParams rowParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            rowParams.setMargins(0, dp(4), 0, 0);
+            cardLayout.addView(row, rowParams);
+        } else {
+            label.setTextSize(18);
+            LinearLayout.LayoutParams labelParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            labelParams.setMargins(0, dp(4), 0, dp(3));
+            cardLayout.addView(label, labelParams);
+
+            playButton.setTextSize(14);
+            cardLayout.addView(playButton, new LinearLayout.LayoutParams(dp(92), dp(40)));
+        }
 
         return cardLayout;
     }
