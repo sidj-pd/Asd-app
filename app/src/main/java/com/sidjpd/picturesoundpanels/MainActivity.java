@@ -658,22 +658,25 @@ public class MainActivity extends Activity {
         if (path == null || path.isEmpty()) {
             return;
         }
-        stopPlayback();
+        releasePlayer(); // Only release old player, do NOT reset visuals
         try {
             player = new MediaPlayer();
             player.setDataSource(path);
-            player.setOnCompletionListener(mp -> {
-                if (player != null) {
-                    player.release();
-                    player = null;
-                }
-            });
+            player.setOnCompletionListener(mp -> releasePlayer());
             player.prepare();
             player.start();
             isAudioPlaying = true;
         } catch (IOException | RuntimeException ex) {
-            stopPlayback();
+            stopPlayback(); // Full reset including visuals on error
             Toast.makeText(this, "Could not play audio.", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    // Only releases the MediaPlayer. Does NOT reset isAudioPlaying or restore UI.
+    private void releasePlayer() {
+        if (player != null) {
+            player.release();
+            player = null;
         }
     }
 
